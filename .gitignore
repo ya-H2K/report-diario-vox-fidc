@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.log
+
+# dados do login (usuários, segredo da sessão, e-mails de teste): nunca vão para o GitHub
+server/dados/

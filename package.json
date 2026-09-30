@@ -1,0 +1,23 @@
+{
+  "name": "dashboard-fluxo-vox",
+  "version": "1.0.0",
+  "description": "Dashboard online do fluxo operacional Vox FIDC, lendo a planilha de acompanhamento",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"node --watch server/index.js\" \"vite\"",
+    "build": "vite build",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.3",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
+    "vite": "^8.3.1"
+  },
+  "type": "module"
+}
