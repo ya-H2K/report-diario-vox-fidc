@@ -105,6 +105,31 @@ function liquidacao(itensBase, iso, semMovimento) {
   return { ...st(s, detalhe), itens: operacoes };
 }
 
+// ---------- Status da operação na Bauk (tela Negociação) ----------
+// Enquanto a liquidação está "Aguardando", o card mostra em que fase a operação está na Bauk.
+// Rejeitado/Erro (ou status desconhecido) não mudam nada: segue a regra normal do horário limite.
+const semAcento = (s) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const FASE_APROVACAO = ["cnab gerado", "aguardando assinaturas", "aguardando assinatura", "aguardando envio xml", "xml enviado"];
+export function faseBauk(status) {
+  const s = semAcento(status);
+  if (FASE_APROVACAO.includes(s)) return "aprovacao";
+  if (s === "negociado") return "liquidacao";
+  return null;
+}
+const ROTULO_FASE = { aprovacao: "Aguardando Aprovações", liquidacao: "Aguardando Liquidação" };
+
+// Fases das operações ainda não liquidadas: { aprovacao: n, liquidacao: n } (ou null sem dados da Bauk).
+function fasesPendentes(itens, statusDoDia) {
+  if (!statusDoDia) return null;
+  const conta = { aprovacao: 0, liquidacao: 0 };
+  for (const i of itens) {
+    if (i.liquidado === "Sim") continue;
+    const f = faseBauk(statusDoDia[String(i.operacao)]);
+    if (f) conta[f]++;
+  }
+  return conta;
+}
+
 // ---------- Baixas  ('Baixas Bauk'!J:K) ----------
 const PADROES_BAIXA = ["ENDOSSO_PARCIAL", "ENDOSSO_TOTAL", "URFA_PARCIAL", "URFA_TOTAL"];
 
@@ -208,8 +233,17 @@ function calcularEtapas(b, iso, abertos) {
     baixas: baixas(b, iso),
   };
   const info = informacaoDoDia(b, iso);
-  return Object.fromEntries(Object.entries(brutos).map(([k, v]) =>
-    [k, aplicarAberto(v, abertos[k] ?? abertos.geral, info[k])]));
+  const statusDoDia = b.statusBauk?.[iso] ?? null;
+  return Object.fromEntries(Object.entries(brutos).map(([k, v]) => {
+    const r = aplicarAberto(v, abertos[k] ?? abertos.geral, info[k]);
+    if (k !== "urfa" && k !== "endosso") return [k, r];
+    const fases = fasesPendentes(v.itens || [], statusDoDia);
+    if (!fases) return [k, r];
+    // "Aguardando": se alguma ainda está em aprovação, mostra isso; senão, se está negociada, aguarda a liquidação
+    const fase = fases.aprovacao ? "aprovacao" : fases.liquidacao ? "liquidacao" : null;
+    if (r.status === "aguardando" && fase) return [k, { ...r, rotulo: ROTULO_FASE[fase], fases }];
+    return [k, { ...r, fases }];
+  }));
 }
 
 // Só o que aparece no painel: status e valores. Nada de nomes de arquivo,
@@ -235,7 +269,9 @@ function detalheDe(id, r) {
         endosso: r.criterios?.endosso === "ok" };
     case "urfa":
     case "endosso":
-      return { total: itens.length, liquidadas: itens.filter((i) => i.liquidado === "Sim").length };
+      return { total: itens.length, liquidadas: itens.filter((i) => i.liquidado === "Sim").length,
+        // só no dia em andamento: quantas das pendentes estão em cada fase na Bauk
+        ...(r.status === "aguardando" && r.fases ? { fases: r.fases } : {}) };
     case "baixas":
       return { principais: r.principais ?? 0, esperadas: 4, arquivos: itens.length };
     default:

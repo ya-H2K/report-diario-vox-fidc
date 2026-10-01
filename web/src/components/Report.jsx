@@ -56,6 +56,12 @@ function Detalhe({ id, d }) {
           <b>{d.liquidadas} de {d.total}</b> {plural(d.total, nome[0], nome[1])} {liquidada}{todas ? " com sucesso" : ""}
         </span>
         <div className="det__barra" aria-hidden="true"><i style={{ width: `${(d.liquidadas / d.total) * 100}%` }} /></div>
+        {d.fases && (d.fases.aprovacao > 0 || d.fases.liquidacao > 0) && (
+          <span className="det__nota">
+            Na Bauk: {[d.fases.aprovacao && `${d.fases.aprovacao} aguardando aprovações`,
+              d.fases.liquidacao && `${d.fases.liquidacao} aguardando liquidação`].filter(Boolean).join(" · ")}
+          </span>
+        )}
       </>
     );
   }

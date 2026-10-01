@@ -14,6 +14,8 @@ import { obterBases } from "../server/planilha.js";
 import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caixa.js";
 import { gerarOperacional, gerarCaixa, cortesDoDia } from "./gerar.js";
 import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
+import { statusDoDia } from "./bauk.js";
+import { faseBauk, isoLocal } from "../server/status.js";
 
 const PASTA = path.dirname(fileURLToPath(import.meta.url));
 const ARQ_ESTADO = path.join(PASTA, ".estado.json");
@@ -27,12 +29,49 @@ function lerEstado() {
 function salvarEstado(e) { fs.writeFileSync(ARQ_ESTADO, JSON.stringify(e, null, 1), "utf-8"); }
 const hash = (v) => crypto.createHash("sha1").update(JSON.stringify(v)).digest("hex");
 
+// ---------- status das operações do dia na Bauk (tela Negociação) ----------
+// Consultado a cada BAUK_INTERVALO_MIN (padrão 2) em dias úteis, das 8h às 20h.
+// Desligar: BAUK_STATUS=false no .env.
+const baukLigado = () => (process.env.BAUK_STATUS || "true").toLowerCase() !== "false";
+const bauk = { iso: null, status: null, em: 0, falhas: 0, avisados: new Set(), exemploSalvo: false };
+
+async function atualizarBauk({ forcar = false } = {}) {
+  if (!baukLigado()) return;
+  const agoraLocal = agora();
+  const iso = isoLocal(agoraLocal);
+  const hora = agoraLocal.getHours();
+  const util = agoraLocal.getDay() !== 0 && agoraLocal.getDay() !== 6;
+  if (!forcar && (!util || hora < 8 || hora >= 20)) return;
+  const intervalo = Number(process.env.BAUK_INTERVALO_MIN || 2) * 60 * 1000;
+  if (!forcar && bauk.iso === iso && Date.now() - bauk.em < intervalo) return;
+  try {
+    const { status, exemplo } = await statusDoDia(iso);
+    bauk.iso = iso; bauk.status = status; bauk.em = Date.now();
+    if (bauk.falhas) log("Bauk: consulta de status voltou a funcionar.");
+    bauk.falhas = 0;
+    if (exemplo && !bauk.exemploSalvo) {      // cópia de um item, para conferência (fica só no PC)
+      fs.writeFileSync(path.join(PASTA, ".bauk-exemplo.json"), JSON.stringify(exemplo, null, 2), "utf-8");
+      bauk.exemploSalvo = true;
+    }
+    for (const [op, st] of Object.entries(status)) {
+      if (st && !faseBauk(st) && !bauk.avisados.has(st)) {
+        bauk.avisados.add(st);
+        log(`Bauk: status "${st}" (operação ${op}) não muda o card (só CNAB Gerado, Aguardando Assinaturas, Aguardando Envio XML, XML Enviado e Negociado mudam).`);
+      }
+    }
+  } catch (e) {
+    bauk.em = Date.now();                     // espera o intervalo antes de tentar de novo
+    if (bauk.falhas++ === 0) aviso(`Bauk: não consegui ler o status das operações (${e.message}). O site segue sem essa informação.`);
+  }
+}
+const statusBaukParaBases = () => (bauk.iso && bauk.status ? { [bauk.iso]: bauk.status } : {});
+
 // Monta tudo e envia só o que mudou desde o último envio.
 export async function publicar({ tudo = false } = {}) {
   const sb = conectar();
   const leitura = await obterBases(config.planilha, { forcar: true });
   if (leitura.erro) aviso(leitura.erro);
-  const mapa = gerarOperacional(leitura.bases, config, agora());
+  const mapa = gerarOperacional({ ...leitura.bases, statusBauk: statusBaukParaBases() }, config, agora());
 
   let publicados = [];
   try { publicados = await listarPublicados(config.caixaPublicado, config.caixaDesde); }
@@ -79,6 +118,7 @@ async function assinatura() {
       partes.push(`${n}:${fs.statSync(path.join(config.caixaPublicado, n)).mtimeMs}`);
     }
   } catch { partes.push("sem-caixa"); }
+  partes.push(hash(statusBaukParaBases()));
   return partes.join("|");
 }
 
@@ -99,6 +139,7 @@ async function vigiar() {
   let ultima = null;
   let falhas = 0;
   for (;;) {
+    await atualizarBauk();
     const atual = await assinatura();
     if (atual !== ultima) {
       try {
@@ -120,7 +161,7 @@ const direto = process.argv[1] && path.resolve(process.argv[1]).toLowerCase() ==
 if (direto) {
   const args = process.argv.slice(2);
   if (args.includes("--uma-vez") || args.includes("--tudo")) {
-    publicar({ tudo: args.includes("--tudo") })
+    atualizarBauk({ forcar: true }).then(() => publicar({ tudo: args.includes("--tudo") }))
       .then((r) => { log(resumo(r)); process.exit(0); })
       .catch((e) => { console.error(`[erro] ${e.message}`); process.exit(1); });
   } else {
