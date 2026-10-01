@@ -8,8 +8,8 @@ import { LogoH2, LogoVox } from "./Logos.jsx";
 const hhmm = (d) => (d ? new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(d) : "");
 
 const ABAS = [
-  { id: "operacional", nome: "Fluxo operacional", href: "#/" },
-  { id: "caixa", nome: "Fluxo de caixa", href: "#/caixa" },
+  { id: "operacional", nome: "Fluxo Operacional", href: "#/" },
+  { id: "caixa", nome: "Fluxo de Caixa", href: "#/caixa" },
   { id: "usuarios", nome: "Usuários", href: "#/usuarios", soAdmin: true },
 ];
 
@@ -84,7 +84,7 @@ export function CabecaPagina({ dia, selecionada, ultima, proxima, atualizando, f
   return (
     <div className="cabeca-pagina">
       <div>
-        <h1 className="page-title">Report operacional</h1>
+        <h1 className="page-title">Report Operacional</h1>
         <p className="page-sub">{diaSemana(selecionada)}, {diaMes(selecionada)} de {ano(selecionada)}</p>
       </div>
       <div className="cabeca-pagina__direita">

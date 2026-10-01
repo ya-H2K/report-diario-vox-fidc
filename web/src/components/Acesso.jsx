@@ -84,7 +84,7 @@ export default function Acesso({ onEntrar }) {
             <LogoVox />
           </div>
           <span className="brand">Vox FIDC</span>
-          <span className="acesso__sub">Report operacional</span>
+          <span className="acesso__sub">Report Operacional</span>
         </div>
 
         {etapa === "entrar" && (

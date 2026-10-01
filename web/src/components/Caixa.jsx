@@ -268,7 +268,7 @@ export default function Caixa({ aba, onAba }) {
       <div className="pagina pagina--larga">
         <div className="cabeca-pagina">
           <div>
-            <h1 className="page-title">Fluxo de caixa</h1>
+            <h1 className="page-title">Fluxo de Caixa</h1>
             <p className="page-sub">
               {rotuloMes}{dia ? `, dia ${curta(dia.data)} selecionado` : posicao ? `, posição de ${curta(posicao)}` : ""}
             </p>
