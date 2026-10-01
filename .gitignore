@@ -5,3 +5,6 @@ dist/
 
 # dados do login (usuários, segredo da sessão, e-mails de teste): nunca vão para o GitHub
 server/dados/
+
+# estado do publicador (o que já foi enviado para a nuvem)
+publicador/.estado.json

@@ -1,0 +1,129 @@
+// Publicador: lê a planilha e o fluxo de caixa no seu PC e envia para o Supabase
+// só os status e valores que o site mostra (nada de nomes de arquivo, caminhos etc.).
+//
+//   node publicador/publicar.js            fica vigiando: publica sempre que a planilha
+//                                          ou a pasta do caixa mudarem (confere a cada minuto)
+//   node publicador/publicar.js --uma-vez  publica uma vez e sai
+//   node publicador/publicar.js --tudo     reenvia tudo, mesmo o que não mudou
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { config, agora } from "../server/config.js";
+import { obterBases } from "../server/planilha.js";
+import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caixa.js";
+import { gerarOperacional, gerarCaixa, cortesDoDia } from "./gerar.js";
+import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
+
+const PASTA = path.dirname(fileURLToPath(import.meta.url));
+const ARQ_ESTADO = path.join(PASTA, ".estado.json");
+const hora = () => new Date().toLocaleTimeString("pt-BR");
+const log = (...a) => console.log(`[${hora()}]`, ...a);
+const aviso = (...a) => console.warn(`[${hora()}] [aviso]`, ...a);
+
+function lerEstado() {
+  try { return JSON.parse(fs.readFileSync(ARQ_ESTADO, "utf-8")); } catch { return { hashes: {}, arquivos: {} }; }
+}
+function salvarEstado(e) { fs.writeFileSync(ARQ_ESTADO, JSON.stringify(e, null, 1), "utf-8"); }
+const hash = (v) => crypto.createHash("sha1").update(JSON.stringify(v)).digest("hex");
+
+// Monta tudo e envia só o que mudou desde o último envio.
+export async function publicar({ tudo = false } = {}) {
+  const sb = conectar();
+  const leitura = await obterBases(config.planilha, { forcar: true });
+  if (leitura.erro) aviso(leitura.erro);
+  const mapa = gerarOperacional(leitura.bases, config, agora());
+
+  let publicados = [];
+  try { publicados = await listarPublicados(config.caixaPublicado, config.caixaDesde); }
+  catch (e) { aviso(`Fluxo de caixa: ${e.message}`); }
+  const meses = [];
+  for (const publicado of publicados) {
+    try { meses.push({ publicado, dados: await obterCaixa(publicado.caminho) }); }
+    catch (e) { aviso(`Fluxo de caixa ${publicado.nome}: ${e.message}`); }
+  }
+  Object.assign(mapa, gerarCaixa(meses));
+
+  const estado = lerEstado();
+  const novos = Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, hash(v)]));
+  const mudadas = Object.keys(mapa).filter((k) => tudo || estado.hashes[k] !== novos[k]);
+  const apagadas = Object.keys(estado.hashes).filter((k) => !(k in mapa));
+
+  // Planilhas do caixa (para o botão "Baixar planilha"): só as que mudaram.
+  const arquivos = { ...estado.arquivos };
+  let enviados = 0;
+  for (const { publicado } of meses) {
+    if (!tudo && arquivos[publicado.id] === publicado.mtimeMs) continue;
+    await enviarArquivo(sb, `${publicado.id}.xlsx`, fs.readFileSync(publicado.caminho));
+    arquivos[publicado.id] = publicado.mtimeMs;
+    enviados++;
+  }
+
+  if (!mudadas.length && !apagadas.length && !enviados) return { mudadas: 0, apagadas: 0, enviados: 0 };
+
+  await gravarChaves(sb, Object.fromEntries(mudadas.map((k) => [k, mapa[k]])));
+  await apagarChaves(sb, apagadas);
+  // "versao" muda a cada envio: as telas abertas percebem em até 1 minuto e se atualizam.
+  await gravarChaves(sb, { versao: { versao: Date.now(), publicadoEm: new Date().toISOString(), cortes: cortesDoDia(config) } });
+  salvarEstado({ hashes: novos, arquivos });
+  return { mudadas: mudadas.length, apagadas: apagadas.length, enviados };
+}
+
+// "Impressão digital" do que pode mudar: data da planilha e dos arquivos do caixa.
+async function assinatura() {
+  const partes = [];
+  try { partes.push(fs.statSync(config.planilha).mtimeMs); } catch { partes.push("sem-planilha"); }
+  try {
+    for (const n of fs.readdirSync(config.caixaPublicado).sort()) {
+      if (n.startsWith("~$") || !/\.xlsx$/i.test(n)) continue;
+      partes.push(`${n}:${fs.statSync(path.join(config.caixaPublicado, n)).mtimeMs}`);
+    }
+  } catch { partes.push("sem-caixa"); }
+  return partes.join("|");
+}
+
+function resumo(r) {
+  if (!r.mudadas && !r.apagadas && !r.enviados) return "nada mudou, nada a enviar.";
+  return `enviado! (${r.mudadas} bloco(s) de dados${r.enviados ? `, ${r.enviados} planilha(s) do caixa` : ""})`;
+}
+
+async function vigiar() {
+  log("Publicador ligado. Deixe esta janela aberta (pode minimizar).");
+  log(`Planilha: ${config.planilha}`);
+  log(`Caixa:    ${config.caixaPublicado}`);
+  try {
+    const copiados = await prepararPublicados({ pasta: config.caixaPublicado, modeloTrabalho: config.caixaTrabalho, importar: config.caixaImportar });
+    if (copiados.length) log(`Fluxo de caixa, cópia inicial: ${copiados.join(", ")}`);
+  } catch (e) { aviso(`Pasta de publicados do fluxo de caixa: ${e.message}`); }
+
+  let ultima = null;
+  let falhas = 0;
+  for (;;) {
+    const atual = await assinatura();
+    if (atual !== ultima) {
+      try {
+        log(ultima === null ? "Conferindo os dados..." : "Mudança detectada, publicando...");
+        log(resumo(await publicar()));
+        ultima = atual;
+        falhas = 0;
+      } catch (e) {
+        falhas++;
+        aviso(`Não consegui publicar (${e.message}). Tento de novo em 1 minuto.`);
+        if (falhas === 3) aviso("Se continuar, confira a internet e as chaves do Supabase no .env.");
+      }
+    }
+    await new Promise((r) => setTimeout(r, 60 * 1000));
+  }
+}
+
+const direto = process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase();
+if (direto) {
+  const args = process.argv.slice(2);
+  if (args.includes("--uma-vez") || args.includes("--tudo")) {
+    publicar({ tudo: args.includes("--tudo") })
+      .then((r) => { log(resumo(r)); process.exit(0); })
+      .catch((e) => { console.error(`[erro] ${e.message}`); process.exit(1); });
+  } else {
+    vigiar();
+  }
+}

@@ -193,6 +193,8 @@ export default function Caixa({ aba, onAba }) {
   const [arquivo, setArquivo] = useState(null);     // versão publicada do mês (nome, data)
   const [erro, setErro] = useState(null);
   const [diaSel, setDiaSel] = useState(null);       // data selecionada (null = mês inteiro)
+  const [baixando, setBaixando] = useState(false);
+  const [falhaBaixar, setFalhaBaixar] = useState(false);
   const mesRef = useRef(null);
   mesRef.current = mes;
 
@@ -277,9 +279,16 @@ export default function Caixa({ aba, onAba }) {
                 <span className="publicacao__info">
                   Versão publicada em {dataHora(arquivo.publicadoEm)}
                 </span>
-                <a className="button button--pequeno publicacao__baixar"
-                  href={`/api/caixa/${arquivo.id}/arquivo`} download={arquivo.nome}>
-                  <span aria-hidden="true">↓</span> Baixar planilha
+                <a className="button button--pequeno publicacao__baixar" href="#baixar"
+                  aria-disabled={baixando || undefined}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    if (baixando) return;
+                    setBaixando(true);
+                    setFalhaBaixar(false);
+                    try { await apiCaixa.baixar(arquivo); } catch { setFalhaBaixar(true); } finally { setBaixando(false); }
+                  }}>
+                  <span aria-hidden="true">↓</span> {baixando ? "Baixando…" : falhaBaixar ? "Falhou, tente de novo" : "Baixar planilha"}
                 </a>
               </div>
             )}

@@ -1,5 +1,9 @@
 # Dashboard do fluxo operacional (Vox FIDC)
 
+> **Agora o site roda online** (GitHub Pages + Supabase): veja a seção *Site online* e o
+> arquivo `PASSO-A-PASSO-SITE-ONLINE.md`. As seções *Como rodar no seu computador*, *Login*
+> e *API* descrevem o servidor antigo (localhost), que o site não usa mais.
+
 Painel web que lê a planilha **Acompanhamento de Fluxo Operacional - Vox.xlsx**
 (a mesma que a automação em Python preenche) e mostra, dia a dia, o status das
 etapas: Extração RPE, Processamento Bauk, Liquidação URFA, Liquidação Endosso e
@@ -41,11 +45,62 @@ npm start
 
 e abra **http://localhost:3001**.
 
-## Colocar no ar (produção)
+## Site online (GitHub Pages + Supabase)
 
-1. No `.env`: troque `ADMIN_SENHA`, deixe `SIMULAR_AGORA=` vazio e use `COOKIE_SEGURO=true`.
-2. Rode `iniciar-producao.bat`: compila o site e serve tudo em `http://localhost:3001`.
-3. Aponte o túnel (Cloudflare Tunnel) para `http://localhost:3001`.
+O site fica em **https://ya-h2k.github.io/report-diario-vox-fidc/** e não depende do PC
+ligado para abrir. O passo a passo da primeira configuração está em
+`PASSO-A-PASSO-SITE-ONLINE.md`.
+
+```
+Planilha no PC ──> publicador (iniciar-publicador.bat) ──> Supabase ──> site no GitHub Pages
+```
+
+- **Publicador** (`publicador/`): roda no PC, confere a cada minuto se a planilha ou a pasta
+  de publicados do caixa mudaram e, se mudaram, envia **só os status e valores** que o site
+  mostra (as mesmas regras de `server/status.js`). Nomes de arquivo, caminhos e observações
+  internas nunca saem do PC. Com o PC desligado o site continua no ar, com os últimos dados.
+- **Status por horário**: para o dia de hoje o publicador manda um cenário para cada horário
+  de corte (14h, 15h, 17h, 18h, 19h) e a tela escolhe o cenário pelo relógio (horário de
+  Brasília). Assim "Aguardando" vira "Não realizado" na hora certa, mesmo sem novo envio.
+- **Supabase**: guarda os dados (tabela `painel`), as planilhas do caixa (bucket privado
+  `caixa`) e os logins. Tudo passa pelas funções `vox_*` de `supabase/configurar.sql`, que
+  só entregam dados a quem tem cadastro aprovado e sessão válida.
+- **Site**: a mesma interface React, compilada pelo GitHub Actions
+  (`.github/workflows/pages.yml`, copiado de `publicador/github-pages.yml` pelo
+  `configurar-online.bat`) a cada `git push`. Só usa a chave **publishable**
+  (`web/src/config-publica.js`); a chave **secret** fica só no `.env` do PC.
+
+Arquivos `.bat`:
+
+| Arquivo | Para que serve |
+|---|---|
+| `configurar-online.bat` | Primeira configuração: chaves, admin, primeiro envio e envio do site ao GitHub. |
+| `iniciar-publicador.bat` | Liga o publicador (deixe a janela aberta, pode minimizar). |
+| `ligar-publicador-com-o-windows.bat` | Faz o publicador ligar sozinho quando você entra no Windows. |
+| `enviar-site-github.bat` | Manda mudanças no código do site para o GitHub (republica em 1 a 3 min). |
+
+Comandos úteis: `node publicador/publicar.js --uma-vez` (publica agora) e `--tudo`
+(reenvia tudo, mesmo o que não mudou).
+
+### Login no site online
+
+Funciona como antes (pedir acesso, aprovação do admin, esqueci minha senha com aprovação,
+bloquear/excluir na hora), com estas diferenças:
+
+- O admin entra com **e-mail** (`ADMIN_EMAIL`) e a senha `ADMIN_SENHA` do `.env`.
+  Para trocar a senha do admin: mude `ADMIN_SENHA` e rode `configurar-online.bat` de novo.
+- Os cadastros do site antigo (`server/dados/usuarios.json`) não passam para o online:
+  as pessoas pedem acesso de novo.
+- Limite de tentativas de login: o do próprio Supabase (por endereço de internet), no lugar
+  do "5 tentativas / 15 min".
+- Domínios permitidos: tabela `dominios_permitidos` no Supabase (Table Editor).
+
+## Servidor antigo (server/index.js)
+
+O site não usa mais o servidor Node nem o túnel do Cloudflare. `server/planilha.js`,
+`server/status.js`, `server/caixa.js` e `server/config.js` continuam sendo usados pelo
+publicador. `npm run dev` abre a interface em http://localhost:5173 já lendo do Supabase
+(útil para testar mudanças na tela antes de mandar para o GitHub).
 
 ## Configuração (.env)
 
