@@ -305,12 +305,12 @@ export default function Caixa({ aba, onAba }) {
           <main className="report">
             <BarraContexto dia={dia} ultimo={diasDoMes.at(-1)} onMes={() => setDiaSel(null)} />
             <Ponte indicadores={dados.indicadores} linhas={dados.linhas} dia={dia} />
-            <Tabela linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
             <div className="grade grade--graficos">
               <GraficoSaldo linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
               <GraficoEntradasSaidas linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
             </div>
             <GraficoEnquadramento linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
+            <Tabela linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
           </main>
         )}
       </div>
