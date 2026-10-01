@@ -26,7 +26,7 @@ export default function Operacional({ aba, onAba }) {
   const falhouRef = useRef(false);
   falhouRef.current = falhou;
 
-  const intervaloMs = (meta?.intervaloAtualizacaoMin || 30) * 60 * 1000;
+  const intervaloMs = (meta?.intervaloAtualizacaoMin || 10) * 60 * 1000;
   const proxima = ultima ? new Date(ultima.getTime() + intervaloMs) : null;
 
   // Abertura: sempre no dia de hoje. Se o servidor ainda estiver ligando, tenta de novo sozinho.
@@ -81,7 +81,7 @@ export default function Operacional({ aba, onAba }) {
   useEffect(() => { carregar(selecionada); }, [selecionada, carregar]);
 
   // A cada minuto confere se a planilha foi salva de novo (ex.: a automação acabou de
-  // gravar "Sim" na liquidação). Se foi, atualiza a tela na hora, sem esperar os 30 min.
+  // gravar "Sim" na liquidação). Se foi, atualiza a tela na hora, sem esperar os 10 min.
   const versaoRef = useRef(null);
   useEffect(() => {
     const conferir = async () => {
@@ -99,7 +99,7 @@ export default function Operacional({ aba, onAba }) {
     return () => clearInterval(t);
   }, [carregar]);
 
-  // Agenda a próxima busca: a cada 30 min; se ainda não carregou nada ou falhou, tenta antes.
+  // Agenda a próxima busca: a cada 10 min; se ainda não carregou nada ou falhou, tenta antes.
   useEffect(() => {
     if (!selecionada) return;
     const espera = !temDiaRef.current ? 3000 : falhouRef.current ? Math.min(60000, intervaloMs) : intervaloMs;

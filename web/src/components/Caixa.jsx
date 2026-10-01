@@ -230,7 +230,7 @@ export default function Caixa({ aba, onAba }) {
     if (mesRef.current === alvo) { setDados(r.caixa); setArquivo(r.arquivo); }
   }, []);
 
-  const intervaloMs = (meta?.intervaloAtualizacaoMin || 30) * 60 * 1000;
+  const intervaloMs = (meta?.intervaloAtualizacaoMin || 10) * 60 * 1000;
   useAutoAtualizacao(buscar, { chave: mes, intervaloMs, temDados: Boolean(dados) });
 
   const irPara = (id) => { if (id && id !== mes) { setDados(null); setArquivo(null); setDiaSel(null); setMes(id); } };

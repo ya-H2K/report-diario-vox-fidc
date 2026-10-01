@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Busca dados de tempos em tempos (padrão 30 min), com "Atualizar agora".
+// Busca dados de tempos em tempos (padrão 10 min), com "Atualizar agora".
 // buscar(forcar) deve lançar erro se falhar. chave = o que está selecionado (ex.: o mês);
 // quando muda, busca na hora.
 export function useAutoAtualizacao(buscar, { chave, intervaloMs, temDados }) {

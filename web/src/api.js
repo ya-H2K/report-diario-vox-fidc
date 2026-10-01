@@ -59,7 +59,7 @@ function montarInicio(inicio) {
   const datas = [...inicio.datas];
   if (diaUtil(agora.iso) && !datas.includes(agora.iso)) datas.push(agora.iso);
   datas.sort();
-  const meta = { hoje: agora.iso, intervaloAtualizacaoMin: inicio.intervaloAtualizacaoMin || 30,
+  const meta = { hoje: agora.iso, intervaloAtualizacaoMin: inicio.intervaloAtualizacaoMin || 10,
     mostrarResponsavel: inicio.mostrarResponsavel };
   return { meta, datas, sugerida: datas.includes(agora.iso) ? agora.iso : datas.at(-1) };
 }
@@ -103,7 +103,7 @@ export const apiCaixa = {
     const { iso } = agoraBrasilia();
     const atual = iso.slice(0, 7);
     return {
-      meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 30 },
+      meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 },
       meses,
       sugerido: meses.some((m) => m.id === atual) ? atual : meses.at(-1)?.id ?? null,
     };
@@ -112,7 +112,7 @@ export const apiCaixa = {
     const r = await lerPainel([`caixa:${id}`, "inicio"]);
     const c = r[`caixa:${id}`];
     if (!c) throw Object.assign(new Error("Não há fluxo de caixa publicado para este mês."), { status: 404 });
-    return { meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 30 }, mes: c.mes, arquivo: c.arquivo, caixa: c.caixa };
+    return { meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 }, mes: c.mes, arquivo: c.arquivo, caixa: c.caixa };
   },
   // Link temporário (1 minuto) para baixar a planilha publicada do mês.
   baixar: async (arquivo) => {

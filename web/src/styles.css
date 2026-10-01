@@ -65,6 +65,13 @@ h1, h2 { margin: 0; }
 .brand { color: var(--gold); font-size: 1.5rem; font-weight: 600; letter-spacing: .12em; }
 .topbar__esquerda { display: flex; align-items: center; gap: .5rem 2.5rem; flex-wrap: wrap; }
 
+/* logos: H2 Kapital (arte original) antes do nome; Vox (contorno, na cor do texto) à direita */
+.marca { display: flex; align-items: center; gap: .8rem; }
+.logo-h2 { display: block; height: 2.6rem; width: auto; border-radius: 2px; }
+.logo-vox { display: block; height: 1.05rem; width: auto; color: var(--text); opacity: .88; }
+.topbar__parceiro { display: flex; align-items: center; padding-left: 1rem; margin-left: .25rem; border-left: 1px solid var(--line); }
+@media (max-width: 560px) { .topbar__parceiro { display: none; } .logo-h2 { height: 2.2rem; } }
+
 /* abas do site, no estilo da navegação do Anúbis */
 .abas { display: flex; gap: 1.75rem; }
 .aba {
@@ -427,6 +434,10 @@ h1, h2 { margin: 0; }
   border: 1px solid var(--line); border-top: 2px solid var(--gold); padding: 2rem 2rem 1.75rem;
 }
 .acesso__marca { display: grid; gap: .15rem; margin-bottom: 1.75rem; }
+.acesso__logos { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.acesso__logos .logo-h2 { height: 3.4rem; }
+.acesso__logos .logo-vox { height: 1.3rem; }
+.acesso__divisor { width: 1px; align-self: stretch; margin: .4rem 0; background: var(--line); }
 .acesso__sub { color: var(--text-dim); font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; }
 .acesso__form { display: grid; gap: 1rem; }
 .acesso__titulo { font-size: 1.3rem; font-weight: 600; }

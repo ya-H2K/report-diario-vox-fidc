@@ -25,7 +25,7 @@ npm run dev
 ```
 
 Abra **http://localhost:5173**. A tela abre sempre no dia de hoje e busca dados novos
-sozinha a cada 30 minutos. No canto superior direito aparece quando foi a última busca,
+sozinha a cada 10 minutos. No canto superior direito aparece quando foi a última busca,
 a próxima e o botão **Atualizar agora**, que faz o servidor reler a planilha na hora.
 
 **Atualização automática.** A cada minuto a tela confere, de forma leve (só a data do
@@ -116,7 +116,7 @@ publicador. `npm run dev` abre a interface em http://localhost:5173 já lendo do
 | `LIMITE_RPE` | Até que horas arquivos RPE faltando aparecem como "Aguardando" (padrão 14:00). |
 | `LIMITE_LIQUIDACAO_ENDOSSO` / `LIMITE_LIQUIDACAO_URFA` | Até que horas uma liquidação sem saída no extrato aparece como "Aguardando" (padrão 15:00 e 17:00). |
 | `HORA_FECHAMENTO` | Horário a partir do qual o dia de hoje é considerado consolidado (padrão 19:00). |
-| `INTERVALO_ATUALIZACAO_MIN` | De quantos em quantos minutos a tela busca dados novos (padrão 30). |
+| `INTERVALO_ATUALIZACAO_MIN` | De quantos em quantos minutos a tela busca dados novos (padrão 10). |
 | `MOSTRAR_RESPONSAVEL` | `true` mostra a coluna Responsável no quadro de observações; `false` esconde (e ela nem sai do servidor). |
 | `SIMULAR_AGORA` | Só para testes, ex.: `2026-09-22T14:30`. Faz o sistema agir como se fosse esse momento. |
 

@@ -25,7 +25,7 @@ export const config = {
   limiteEndosso: process.env.LIMITE_LIQUIDACAO_ENDOSSO || "15:00",
   limiteUrfa: process.env.LIMITE_LIQUIDACAO_URFA || "17:00",
   // De quantos em quantos minutos a tela busca dados novos na planilha.
-  intervaloAtualizacaoMin: Number(process.env.INTERVALO_ATUALIZACAO_MIN || 30),
+  intervaloAtualizacaoMin: Number(process.env.INTERVALO_ATUALIZACAO_MIN || 10),
   // Mostra a coluna "Responsável" no quadro de observações (true/false).
   mostrarResponsavel: (process.env.MOSTRAR_RESPONSAVEL || "true").toLowerCase() !== "false",
   // ---------------- login ----------------

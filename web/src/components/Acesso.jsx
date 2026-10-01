@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiAuth } from "../api.js";
+import { LogoH2, LogoVox } from "./Logos.jsx";
 
 // Regras da senha (as mesmas do servidor).
 const regras = (s) => [
@@ -77,6 +78,11 @@ export default function Acesso({ onEntrar }) {
     <div className="acesso">
       <div className="acesso__card">
         <div className="acesso__marca">
+          <div className="acesso__logos">
+            <LogoH2 />
+            <span className="acesso__divisor" aria-hidden="true" />
+            <LogoVox />
+          </div>
           <span className="brand">Vox FIDC</span>
           <span className="acesso__sub">Report operacional</span>
         </div>
