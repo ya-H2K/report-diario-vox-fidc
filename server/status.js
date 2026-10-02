@@ -28,7 +28,10 @@ function aplicarAberto(resultado, aberto, temInformacao) {
 // O que indica que a informação de cada item já chegou na planilha naquele dia.
 // URFA e Endosso saem do arquivo da Bauk: se a Visão Geral já tem o dia, "Sem URFA"
 // e "Sem endosso" são resultado de verdade, não espera.
-function informacaoDoDia(b, iso) {
+// arquivosFechados = já passou do horário limite dos arquivos da Bauk (LIMITE_ARQUIVOS_BAUK,
+// padrão 10:30). Antes disso os arquivos ainda estão chegando: Bauk, Baixas e "Sem URFA/Sem
+// endosso" ficam "Aguardando informações" (só aparece OK, nunca "Não realizado").
+function informacaoDoDia(b, iso, arquivosFechados = true) {
   const tem = (base) => doDia(base, iso).length > 0;
   const bauk = tem(b.visaoGeral);
   // Liquidação: com operação no dia, só é definitiva quando o extrato confirma a saída
@@ -37,19 +40,21 @@ function informacaoDoDia(b, iso) {
   const liquidacao = (base) => {
     const linhas = doDia(base, iso);
     const temOperacao = linhas.some((i) => i.operacao !== "");
-    return temOperacao ? false : linhas.length > 0 || bauk;
+    return temOperacao ? false : arquivosFechados && (linhas.length > 0 || bauk);
   };
   return {
     // RPE: os arquivos chegam ao longo do dia; até o horário limite (14h), o que não
     // estiver completo fica "Aguardando". Depois, vale o resultado da planilha.
     rpe: false,
-    bauk,
+    // Bauk e Baixas: até o limite dos arquivos, o que não estiver OK fica "Aguardando".
+    // Depois, vale o resultado da planilha (mesmo esquema da Extração RPE).
+    bauk: false,
     urfa: liquidacao(b.liquidacaoUrfa),
     endosso: liquidacao(b.liquidacaoEndosso),
-    baixas: tem(b.baixasBauk),
+    baixas: false,
     arquivosRpe: tem(b.arquivosRpe),
     flash: tem(b.flash),
-    represadas: tem(b.represadas) || bauk,
+    represadas: tem(b.represadas) || (bauk && arquivosFechados),
   };
 }
 
@@ -232,7 +237,7 @@ function calcularEtapas(b, iso, abertos) {
     endosso: liquidacao(b.liquidacaoEndosso, iso, "Sem endosso"),
     baixas: baixas(b, iso),
   };
-  const info = informacaoDoDia(b, iso);
+  const info = informacaoDoDia(b, iso, abertos.arquivosFechados);
   const statusDoDia = b.statusBauk?.[iso] ?? null;
   return Object.fromEntries(Object.entries(brutos).map(([k, v]) => {
     const r = aplicarAberto(v, abertos[k] ?? abertos.geral, info[k]);
@@ -282,7 +287,7 @@ function detalheDe(id, r) {
 // Igual ao quadro H4:K10 da aba "Quadro de Observações": os 5 processos
 // (observação e responsável digitados nas colunas D e E) e a linha de Baixas Represadas
 // (colunas E, F e G da aba Baixas Represadas).
-function quadroObservacoes(b, iso, aberto, processos, mostrarResponsavel) {
+function quadroObservacoes(b, iso, aberto, processos, mostrarResponsavel, arquivosFechados = true) {
   const obsDia = doDia(b.observacoes, iso);
   const linhas = processos.map((p) => {
     const o = obsDia.find((x) => x.processo === p.nome);
@@ -293,7 +298,7 @@ function quadroObservacoes(b, iso, aberto, processos, mostrarResponsavel) {
   const represada = doDia(b.represadas, iso)[0];
   let st;
   if (represada && represada.represada === "Sim") st = { status: "nao_realizado", rotulo: "Sim" };
-  else if (!represada && aberto && !informacaoDoDia(b, iso).represadas) st = { status: "aguardando", rotulo: ROTULOS.aguardando };
+  else if (!represada && aberto && !informacaoDoDia(b, iso, arquivosFechados).represadas) st = { status: "aguardando", rotulo: ROTULOS.aguardando };
   else st = { status: "ok", rotulo: "Não" };
   linhas.push({ processo: "Baixas Represadas", ...st,
     observacao: represada?.motivo || "", responsavel: represada?.responsavel || "" });
@@ -323,10 +328,14 @@ function situacaoDoDia(b, iso, agora, horaEncerramento) {
 }
 
 export function montarDia(b, iso, { agora, horaFechamento, horaEncerramento = "18:00", limiteRpe = "14:00",
-  limiteEndosso = "15:00", limiteUrfa = "17:00", mostrarResponsavel = true }) {
+  limiteEndosso = "15:00", limiteUrfa = "17:00", limiteArquivosBauk = "10:30", mostrarResponsavel = true }) {
   const aberto = diaAberto(iso, agora, horaFechamento);
+  const arquivosAbertos = aberto && diaAberto(iso, agora, limiteArquivosBauk);
   const etapas = calcularEtapas(b, iso, {
     geral: aberto,
+    arquivosFechados: !arquivosAbertos,
+    bauk: arquivosAbertos,
+    baixas: arquivosAbertos,
     rpe: aberto && diaAberto(iso, agora, limiteRpe),
     urfa: aberto && diaAberto(iso, agora, limiteUrfa),
     endosso: aberto && diaAberto(iso, agora, limiteEndosso),
@@ -345,7 +354,7 @@ export function montarDia(b, iso, { agora, horaFechamento, horaEncerramento = "1
       resumo("flash", "Flash Reports + BKs", aplicarAberto(flashReports(b, iso), aberto, info.flash)),
     ],
     valores: valores(b, iso, aberto),
-    observacoes: quadroObservacoes(b, iso, aberto, processos, mostrarResponsavel),
+    observacoes: quadroObservacoes(b, iso, aberto, processos, mostrarResponsavel, !arquivosAbertos),
     situacao: situacaoDoDia(b, iso, agora, horaEncerramento),
   };
 }

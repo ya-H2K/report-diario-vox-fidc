@@ -13,7 +13,7 @@ import { montarDia, isoLocal } from "../server/status.js";
 const DIA_VAZIO = "2099-01-05";
 
 export function cortesDoDia(cfg) {
-  return [...new Set([cfg.limiteRpe, cfg.limiteEndosso, cfg.limiteUrfa, cfg.horaEncerramento, cfg.horaFechamento]
+  return [...new Set([cfg.limiteRpe, cfg.limiteArquivosBauk, cfg.limiteEndosso, cfg.limiteUrfa, cfg.horaEncerramento, cfg.horaFechamento]
     .map(normalizarHora))].sort();
 }
 
@@ -31,7 +31,7 @@ function momento(iso, hhmm) {
 
 function opcoesDe(cfg, agora) {
   return { agora, horaFechamento: cfg.horaFechamento, horaEncerramento: cfg.horaEncerramento,
-    limiteRpe: cfg.limiteRpe, limiteEndosso: cfg.limiteEndosso, limiteUrfa: cfg.limiteUrfa,
+    limiteRpe: cfg.limiteRpe, limiteArquivosBauk: cfg.limiteArquivosBauk, limiteEndosso: cfg.limiteEndosso, limiteUrfa: cfg.limiteUrfa,
     mostrarResponsavel: cfg.mostrarResponsavel };
 }
 
