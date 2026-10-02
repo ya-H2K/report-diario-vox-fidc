@@ -102,7 +102,7 @@ function CardResumo({ rotulo, valor, aguardando, linhas }) {
     <div className="card card--resumo">
       <span className="card__rotulo">{rotulo}</span>
       {aguardando
-        ? <span className="card__valor card__valor--grande card__valor--aguardando">Aguardando</span>
+        ? <span className="card__valor card__valor--grande card__valor--aguardando">Aguardando...</span>
         : <span className="card__valor card__valor--grande">{brl(valor)}</span>}
       <dl className="card__linhas">
         {linhas.map(([nome, v]) => (
