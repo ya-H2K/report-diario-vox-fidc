@@ -12,6 +12,9 @@ export const config = {
     "H:\\3. Gestão\\VOX FIDC\\8.Estudos e levantamentos\\{ANO}\\CashFlow VOX\\{MES}\\CashFlow Vox - {MES_NOME} {ANO}.xlsx",
   // Meses copiados para a pasta de publicados na primeira vez (só os que ainda não estão lá).
   caixaImportar: process.env.CAIXA_IMPORTAR ?? "2026-07:2026-09",
+  // Despesas do fundo: pasta com a versão final (publicada uma vez por mês). Vale o .xlsx mais recente.
+  despesasPublicado: process.env.DESPESAS_PUBLICADO ||
+    "H:\\3. Gestão\\VOX FIDC\\8.Estudos e levantamentos\\Despesas Vox - Publicado",
   // Primeiro mês que aparece no filtro do site.
   caixaDesde: process.env.CAIXA_DESDE || "2026-07",
   porta: Number(process.env.PORTA || 3001),

@@ -275,6 +275,7 @@ on conflict (id) do nothing;
 
 drop policy if exists "vox caixa leitura" on storage.objects;
 create policy "vox caixa leitura" on storage.objects for select to authenticated
-  using (bucket_id = 'caixa' and public._acesso_ok());
+  using (bucket_id = 'caixa' and public._acesso_ok()
+         and (name not like 'despesas/%' or public._admin_ok()));   -- despesas: só o admin, por enquanto
 
 select 'Pronto! Banco do dashboard Vox configurado.' as resultado;

@@ -12,7 +12,8 @@ import { fileURLToPath } from "node:url";
 import { config, agora } from "../server/config.js";
 import { obterBases } from "../server/planilha.js";
 import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caixa.js";
-import { gerarOperacional, gerarCaixa, gerarRelatorios, cortesDoDia } from "./gerar.js";
+import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, cortesDoDia } from "./gerar.js";
+import { arquivoPublicado, lerDespesas } from "../server/despesas.js";
 import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
 import { statusDoDia } from "./bauk.js";
 import { faseBauk, isoLocal, prepararBases } from "../server/status.js";
@@ -134,6 +135,13 @@ export async function publicar({ tudo = false } = {}) {
   Object.assign(mapa, gerarCaixa(meses));
   if (leitura.bases) Object.assign(mapa, gerarRelatorios(leitura.bases));
 
+  // Despesas: o arquivo mais recente da pasta de publicados
+  let despesasArq = null;
+  try {
+    despesasArq = await arquivoPublicado(config.despesasPublicado);
+    if (despesasArq) Object.assign(mapa, gerarDespesas(await lerDespesas(despesasArq.caminho), despesasArq));
+  } catch (e) { aviso(`Despesas: ${e.message}`); despesasArq = null; }
+
   const estado = lerEstado();
   const novos = Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, hash(v)]));
   const mudadas = Object.keys(mapa).filter((k) => tudo || estado.hashes[k] !== novos[k]);
@@ -146,6 +154,12 @@ export async function publicar({ tudo = false } = {}) {
     if (!tudo && arquivos[publicado.id] === publicado.mtimeMs) continue;
     await enviarArquivo(sb, `${publicado.id}.xlsx`, fs.readFileSync(publicado.caminho));
     arquivos[publicado.id] = publicado.mtimeMs;
+    enviados++;
+  }
+
+  if (despesasArq && (tudo || arquivos.despesas !== despesasArq.mtimeMs)) {
+    await enviarArquivo(sb, "despesas/atual.xlsx", fs.readFileSync(despesasArq.caminho));
+    arquivos.despesas = despesasArq.mtimeMs;
     enviados++;
   }
 
@@ -169,19 +183,26 @@ async function assinatura() {
       partes.push(`${n}:${fs.statSync(path.join(config.caixaPublicado, n)).mtimeMs}`);
     }
   } catch { partes.push("sem-caixa"); }
+  try {
+    for (const n of fs.readdirSync(config.despesasPublicado).sort()) {
+      if (n.startsWith("~$") || !/\.xlsx$/i.test(n)) continue;
+      partes.push(`d:${n}:${fs.statSync(path.join(config.despesasPublicado, n)).mtimeMs}`);
+    }
+  } catch { partes.push("sem-despesas"); }
   partes.push(hash(statusBaukParaBases()), hash(dataBauk));
   return partes.join("|");
 }
 
 function resumo(r) {
   if (!r.mudadas && !r.apagadas && !r.enviados) return "nada mudou, nada a enviar.";
-  return `enviado! (${r.mudadas} bloco(s) de dados${r.enviados ? `, ${r.enviados} planilha(s) do caixa` : ""})`;
+  return `enviado! (${r.mudadas} bloco(s) de dados${r.enviados ? `, ${r.enviados} planilha(s) para download` : ""})`;
 }
 
 async function vigiar() {
   log("Publicador ligado. Deixe esta janela aberta (pode minimizar).");
   log(`Planilha: ${config.planilha}`);
   log(`Caixa:    ${config.caixaPublicado}`);
+  log(`Despesas: ${config.despesasPublicado}`);
   try {
     const copiados = await prepararPublicados({ pasta: config.caixaPublicado, modeloTrabalho: config.caixaTrabalho, importar: config.caixaImportar });
     if (copiados.length) log(`Fluxo de caixa, cópia inicial: ${copiados.join(", ")}`);

@@ -137,6 +137,23 @@ export const apiRelatorios = {
     return { linhas: r["admin:desagio"].linhas || [], hoje: agoraBrasilia().iso,
       meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
   },
+
+  // Despesas do fundo: a planilha publicada (todos os meses) e o link para baixá-la.
+  despesas: async () => {
+    const r = await lerPainel(["admin:despesas", "inicio"]);
+    if (!r["admin:despesas"]) throw Object.assign(new Error("O relatório de despesas ainda não foi publicado."), { status: 404 });
+    return { despesas: r["admin:despesas"], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+  },
+  baixarDespesas: async (arquivo) => {
+    const { data, error } = await supabase.storage.from("caixa").createSignedUrl("despesas/atual.xlsx", 60, { download: arquivo.nome });
+    if (error || !data?.signedUrl) throw erroDe(error, "Arquivo indisponível no momento.");
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  },
 };
 
 // ---------------------------------------------------------------- login

@@ -271,6 +271,12 @@ nominal, gráfico por remessa, tabela e botão **Baixar CSV** (do período filtr
   as cessões de URFA da Visão Geral Bauk dos últimos 45 dias que ainda não estão na aba são lançadas
   com valor nominal (posições 127-139) e valor pago (posições 193-205) lidos do CNAB `CB_URFA_*.REM`.
   Para conferir a leitura sem gravar nada: `python preencher_fluxo_operacional_vox.py --conferir-desagio`.
+- **Despesas**: lê a planilha mais recente da pasta `DESPESAS_PUBLICADO` (padrão
+  `...\8.Estudos e levantamentos\Despesas Vox - Publicado`, criada sozinha). Layout: "Fornecedor",
+  "Serviço", opcional "Categoria" e um mês por coluna. Sem a coluna Categoria, a categoria vem do
+  serviço (Gestão, Operação do fundo, Auditoria, Taxas e registros, Agente de cobrança, Outros).
+  A tela mostra um mês: total, variação, pizza por categoria e o que foi pago. Para a planilha de
+  download ficar só com o admin, rode uma vez `supabase/relatorios-despesas.sql` no Supabase.
 - Para liberar aos usuários depois: tirar `soAdmin` da aba em `web/src/components/Cabecalho.jsx`,
   tirar `"relatorios"` de `SO_ADMIN` em `web/src/App.jsx` e trocar a chave para um nome sem `admin:`.
 

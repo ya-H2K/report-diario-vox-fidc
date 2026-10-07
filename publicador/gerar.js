@@ -83,6 +83,13 @@ export function gerarRelatorios(bases) {
   return { "admin:desagio": { linhas } };
 }
 
+// Despesas do fundo (só o admin vê, por enquanto): a planilha publicada já traz todos os meses.
+export function gerarDespesas(despesas, arquivo) {
+  if (!despesas) return {};
+  return { "admin:despesas": { ...despesas,
+    arquivo: { nome: arquivo.nome, publicadoEm: new Date(arquivo.mtimeMs).toISOString() } } };
+}
+
 // Fluxo de caixa: meses publicados (sem caminho de pasta) e o conteúdo de cada mês.
 export function gerarCaixa(meses) {
   const saida = {};

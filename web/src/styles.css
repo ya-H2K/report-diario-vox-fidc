@@ -576,3 +576,41 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
   .extrato__topo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .extrato__num { border-left: 0; border-top: 1px solid var(--line); }
 }
+/* ================================================================ despesas (admin) */
+.d2-var { font-size: .76rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.d2-var--sobe { color: var(--nao_realizado); }
+.d2-var--cai { color: var(--ok); }
+.d2-var--neutra { color: var(--text-dim); }
+.d2-rotulo { display: block; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); }
+.d2-total { display: block; font-size: 2.3rem; font-weight: 600; color: var(--gold-bright); line-height: 1.15; margin: .3rem 0 .25rem; font-variant-numeric: tabular-nums; }
+.d2-sub { font-size: .8rem; color: var(--text-dim); }
+.d2-folha { max-width: 860px; margin: 0 auto; padding: 0; gap: 0; }
+.d2-folha__topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; flex-wrap: wrap; padding: 2rem 2.2rem 1.6rem; border-bottom: 1px solid var(--line); }
+.d2-grupo { padding: 1.1rem 2.2rem .4rem; border-bottom: 1px solid var(--line); }
+.d2-grupo:last-of-type { border-bottom: 0; }
+.d2-grupo__cab { display: grid; grid-template-columns: 1fr auto 9rem; gap: 1rem; align-items: baseline; font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); margin-bottom: .45rem; }
+.d2-grupo__valor { text-align: right; font-size: .95rem; letter-spacing: 0; font-weight: 600; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
+.d2-item { display: grid; grid-template-columns: 1fr auto 9rem; gap: 1rem; align-items: baseline; padding: .5rem 0 .5rem .9rem; font-size: .88rem; border-top: 1px dashed var(--line); }
+.d2-item small { color: var(--text-dim); font-size: .8rem; margin-left: .25rem; }
+.d2-item__valor { text-align: right; font-variant-numeric: tabular-nums; }
+.d2-cor-1 { background: var(--gold-bright); }
+.d2-cor-2 { background: var(--gold); }
+.d2-cor-3 { background: var(--ok); }
+.d2-cor-4 { background: var(--text-dim); }
+.d2-cor-5 { background: var(--parcial); }
+.d2-cor-6 { background: var(--linha-forte); }
+.d2-pizza { display: flex; align-items: center; gap: 1.6rem; }
+.d2-pizza svg path { stroke: var(--surface); stroke-width: 1.5; }
+.d2-pizza__legenda { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; font-size: .84rem; color: var(--text-dim); }
+.d2-pizza__legenda li { display: grid; grid-template-columns: .65rem auto auto; align-items: center; gap: .55rem; }
+.d2-pizza__legenda i { width: .65rem; height: .65rem; display: inline-block; }
+.d2-pizza__legenda b { color: var(--text); font-weight: 600; margin-left: .4rem; font-variant-numeric: tabular-nums; }
+.d2-fill-1 { fill: var(--gold-bright); } .d2-fill-2 { fill: var(--gold); } .d2-fill-3 { fill: var(--ok); }
+.d2-fill-4 { fill: var(--text-dim); } .d2-fill-5 { fill: var(--parcial); } .d2-fill-6 { fill: var(--linha-forte); }
+.d2-folha__topo { align-items: center; }
+.d2-grupo:last-child { border-bottom: 0; padding-bottom: 1rem; }
+.d2-grupo__cab { grid-template-columns: 1fr 9rem; }
+.d2-item { grid-template-columns: 1fr 9rem; }
+.d2-pizza__legenda { min-width: 13rem; }
+.d2-pizza__legenda li { grid-template-columns: .65rem 1fr auto; }
+.d2-pizza__legenda b { text-align: right; }
