@@ -36,10 +36,11 @@ export function BarraTopo({ aba, onAba, children }) {
   return (
     <header className="topbar">
       <div className="topbar__esquerda">
-        <div className="marca">
+        <a className="marca" href="#/" title="Ir para o Report Operacional"
+          onClick={(e) => { e.preventDefault(); onAba("operacional"); }}>
           <LogoH2 />
           <span className="brand">Vox FIDC</span>
-        </div>
+        </a>
         <nav className="abas" aria-label="Telas do site">
           {abas.map((a) => (
             <a key={a.id} href={a.href}
