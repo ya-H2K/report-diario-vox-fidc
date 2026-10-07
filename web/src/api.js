@@ -127,6 +127,18 @@ export const apiCaixa = {
   },
 };
 
+// ---------------------------------------------------------------- relatórios (só admin, por enquanto)
+
+export const apiRelatorios = {
+  // Todas as remessas da aba Deságio (o filtro de período é feito na tela).
+  desagio: async () => {
+    const r = await lerPainel(["admin:desagio", "inicio"]);
+    if (!r["admin:desagio"]) throw Object.assign(new Error("O relatório de deságio ainda não foi publicado."), { status: 404 });
+    return { linhas: r["admin:desagio"].linhas || [], hoje: agoraBrasilia().iso,
+      meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+  },
+};
+
 // ---------------------------------------------------------------- login
 
 const regrasOk = (s) => s.length >= 8 && /\d/.test(s) && /[^A-Za-z0-9\s]/.test(s);

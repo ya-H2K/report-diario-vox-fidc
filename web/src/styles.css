@@ -510,3 +510,31 @@ h1, h2 { margin: 0; }
   font-size: .68rem; font-weight: 600; vertical-align: 1px;
 }
 .card--destaque { border-color: var(--gold); }
+
+/* ================================================================ relatórios (admin) */
+.relatorio-item {
+  display: grid; gap: .6rem; padding: 1.6rem 1.8rem; min-height: 0; text-decoration: none; color: var(--text);
+  transition: border-color .15s, background .15s;
+}
+.relatorio-item:hover, .relatorio-item:focus-visible { border-color: var(--gold); background: var(--realce); }
+.relatorio-item__nome { font-size: 1.1rem; font-weight: 600; color: var(--gold-bright); }
+.relatorio-item__desc { font-size: .85rem; color: var(--text-dim); line-height: 1.45; }
+.relatorio-item__abrir { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.relatorio__voltar { margin-bottom: .6rem; font-size: .8rem; }
+.periodo__ate { color: var(--text-dim); font-size: .8rem; }
+.navegacao .contexto__seg { height: 2.3rem; align-items: stretch; }
+.graf__barra--desagio { fill: var(--gold); opacity: .8; }
+.graf__barra--desagio.ativo { fill: var(--gold-bright); opacity: 1; }
+.legenda-graf__cor--desagio { background: var(--gold); }
+.legenda-graf__traco { width: 1rem; height: 0; display: inline-block; border-top: 1px dashed var(--gold); }
+.tabela-desagio__arquivo { color: var(--text-dim); }
+.tabela-desagio__pct { color: var(--gold-bright); }
+.caixa-tabela tfoot th, .caixa-tabela tfoot td { padding: .7rem .55rem; border-top: 1px solid var(--linha-forte); font-weight: 600; white-space: nowrap; }
+.caixa-tabela tfoot th { text-align: left; padding-left: 0; }
+.caixa-tabela tfoot td.num { text-align: right; }
+@media (max-width: 760px) {
+  .navegacao { flex-wrap: wrap; }
+}
+.filtro-relatorio { display: flex; align-items: center; justify-content: flex-end; gap: .75rem; flex-wrap: wrap; padding-top: 0; }
+.tabela-desagio thead th { text-align: left; }
+.tabela-desagio thead th.num { text-align: right; }

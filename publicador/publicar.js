@@ -12,10 +12,10 @@ import { fileURLToPath } from "node:url";
 import { config, agora } from "../server/config.js";
 import { obterBases } from "../server/planilha.js";
 import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caixa.js";
-import { gerarOperacional, gerarCaixa, cortesDoDia } from "./gerar.js";
+import { gerarOperacional, gerarCaixa, gerarRelatorios, cortesDoDia } from "./gerar.js";
 import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
 import { statusDoDia } from "./bauk.js";
-import { faseBauk, isoLocal } from "../server/status.js";
+import { faseBauk, isoLocal, prepararBases } from "../server/status.js";
 
 const PASTA = path.dirname(fileURLToPath(import.meta.url));
 const ARQ_ESTADO = path.join(PASTA, ".estado.json");
@@ -34,6 +34,11 @@ const hash = (v) => crypto.createHash("sha1").update(JSON.stringify(v)).digest("
 // Desligar: BAUK_STATUS=false no .env.
 const baukLigado = () => (process.env.BAUK_STATUS || "true").toLowerCase() !== "false";
 const bauk = { iso: null, status: null, em: 0, falhas: 0, avisados: new Set(), exemploSalvo: false };
+// Data de negociação de cada operação na Bauk, guardada no PC (publicador/.bauk-datas.json) para
+// que uma operação repetida na planilha em outro dia conte só no dia em que foi negociada.
+const ARQ_DATAS = path.join(PASTA, ".bauk-datas.json");
+let dataBauk = {};
+try { dataBauk = JSON.parse(fs.readFileSync(ARQ_DATAS, "utf-8")); } catch { /* ainda não existe */ }
 
 async function atualizarBauk({ forcar = false } = {}) {
   if (!baukLigado()) return;
@@ -45,8 +50,22 @@ async function atualizarBauk({ forcar = false } = {}) {
   const intervalo = Number(process.env.BAUK_INTERVALO_MIN || 2) * 60 * 1000;
   if (!forcar && bauk.iso === iso && Date.now() - bauk.em < intervalo) return;
   try {
-    const { status, exemplo } = await statusDoDia(iso);
+    const { status, datas, exemplo } = await statusDoDia(iso);
     bauk.iso = iso; bauk.status = status; bauk.em = Date.now();
+    // uma vez por dia: busca também os 7 dias anteriores, para saber a data das operações
+    // que ficaram pendentes e podem ter sido repetidas na planilha
+    if (bauk.datasCompletas !== iso) {
+      for (let k = 1; k <= 7; k++) {
+        const d = new Date(agoraLocal); d.setDate(d.getDate() - k);
+        try { Object.assign(datas, (await statusDoDia(isoLocal(d))).datas); } catch { /* tenta amanhã */ }
+      }
+      bauk.datasCompletas = iso;
+    }
+    const novas = Object.entries(datas || {}).filter(([op, d]) => dataBauk[op] !== d);
+    if (novas.length) {
+      for (const [op, d] of novas) dataBauk[op] = d;
+      try { fs.writeFileSync(ARQ_DATAS, JSON.stringify(dataBauk, null, 1), "utf-8"); } catch { /* fica só na memória */ }
+    }
     if (bauk.falhas) log("Bauk: consulta de status voltou a funcionar.");
     bauk.falhas = 0;
     if (exemplo && !bauk.exemploSalvo) {      // cópia de um item, para conferência (fica só no PC)
@@ -64,6 +83,36 @@ async function atualizarBauk({ forcar = false } = {}) {
     if (bauk.falhas++ === 0) aviso(`Bauk: não consegui ler o status das operações (${e.message}). O site segue sem essa informação.`);
   }
 }
+// Confere as operações de hoje ainda não liquidadas (URFA/Endosso da planilha) contra a Bauk e
+// avisa na janela (uma vez por operação/situação) por que o card não mudou de rótulo.
+// Também grava publicador/.bauk-status.json com o que foi lido, para conferência.
+const conferidos = new Set();
+function conferirBauk(brutas) {
+  if (!baukLigado()) return;
+  const bases = prepararBases({ ...brutas, dataBauk });
+  const iso = isoLocal(agora());
+  const pendentes = [["URFA", bases.liquidacaoUrfa], ["Endosso", bases.liquidacaoEndosso]]
+    .flatMap(([tipo, base]) => (base || []).filter((i) => i.data === iso && i.operacao !== "" && i.liquidado !== "Sim")
+      .map((i) => ({ tipo, operacao: String(i.operacao) })));
+  const lidos = bauk.iso === iso ? bauk.status : null;
+  try {
+    fs.writeFileSync(path.join(PASTA, ".bauk-status.json"), JSON.stringify({
+      consultadoEm: bauk.em ? new Date(bauk.em).toLocaleString("pt-BR") : null, dia: iso,
+      statusNaBauk: lidos, pendentesNaPlanilha: pendentes }, null, 2), "utf-8");
+  } catch { /* só conferência */ }
+  for (const p of pendentes) {
+    let motivo = null;
+    if (!lidos) motivo = "a consulta à Bauk ainda não trouxe dados de hoje";
+    else if (!(p.operacao in lidos)) motivo = `a operação não aparece na tela Negociação da Bauk (operações lá: ${Object.keys(lidos).join(", ") || "nenhuma"})`;
+    else if (!faseBauk(lidos[p.operacao])) motivo = `status na Bauk "${lidos[p.operacao]}" não é reconhecido`;
+    const chave = `${iso}|${p.operacao}|${motivo}`;
+    if (motivo && !conferidos.has(chave)) {
+      conferidos.add(chave);
+      log(`Bauk: ${p.tipo} operação ${p.operacao} segue "Aguardando informações": ${motivo}.`);
+    }
+  }
+}
+
 const statusBaukParaBases = () => (bauk.iso && bauk.status ? { [bauk.iso]: bauk.status } : {});
 
 // Monta tudo e envia só o que mudou desde o último envio.
@@ -71,7 +120,8 @@ export async function publicar({ tudo = false } = {}) {
   const sb = conectar();
   const leitura = await obterBases(config.planilha, { forcar: true });
   if (leitura.erro) aviso(leitura.erro);
-  const mapa = gerarOperacional({ ...leitura.bases, statusBauk: statusBaukParaBases() }, config, agora());
+  conferirBauk(leitura.bases);
+  const mapa = gerarOperacional({ ...leitura.bases, statusBauk: statusBaukParaBases(), dataBauk }, config, agora());
 
   let publicados = [];
   try { publicados = await listarPublicados(config.caixaPublicado, config.caixaDesde); }
@@ -82,6 +132,7 @@ export async function publicar({ tudo = false } = {}) {
     catch (e) { aviso(`Fluxo de caixa ${publicado.nome}: ${e.message}`); }
   }
   Object.assign(mapa, gerarCaixa(meses));
+  if (leitura.bases) Object.assign(mapa, gerarRelatorios(leitura.bases));
 
   const estado = lerEstado();
   const novos = Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, hash(v)]));
@@ -118,7 +169,7 @@ async function assinatura() {
       partes.push(`${n}:${fs.statSync(path.join(config.caixaPublicado, n)).mtimeMs}`);
     }
   } catch { partes.push("sem-caixa"); }
-  partes.push(hash(statusBaukParaBases()));
+  partes.push(hash(statusBaukParaBases()), hash(dataBauk));
   return partes.join("|");
 }
 

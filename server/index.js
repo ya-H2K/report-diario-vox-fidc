@@ -26,7 +26,8 @@ async function contexto(forcar = false) {
     opcoes: { agora: now, horaFechamento: config.horaFechamento, horaEncerramento: config.horaEncerramento,
       limiteRpe: config.limiteRpe,
       limiteEndosso: config.limiteEndosso,
-      limiteUrfa: config.limiteUrfa, mostrarResponsavel: config.mostrarResponsavel },
+      limiteUrfa: config.limiteUrfa, limiteArquivosBauk: config.limiteArquivosBauk,
+      limiteFlash: config.limiteFlash, mostrarResponsavel: config.mostrarResponsavel },
     // Só o necessário para a tela: nada de caminhos de arquivo ou horários internos.
     meta: { hoje: isoLocal(now), intervaloAtualizacaoMin: config.intervaloAtualizacaoMin,
       mostrarResponsavel: config.mostrarResponsavel },

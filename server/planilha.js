@@ -117,6 +117,19 @@ function lerBases(wb) {
   const flash = linhas(ws("Flash Reports"), { data: "A", arquivo: "B" }, "arquivo",
     (v) => ({ data: isoDeValor(v.data), arquivo: texto(v.arquivo) }));
 
+  // Deságio das cessões de URFA (aba "Deságio"): A Data, B Nome do arquivo, C Remessa, D Tipo,
+  // E Valor nominal, F Valor pago. O deságio é recalculado aqui ((E - F) / E), sem depender da fórmula G.
+  const desagio = linhas(ws("Deságio"),
+    { data: "A", arquivo: "B", remessa: "C", tipo: "D", nominal: "E", pago: "F" }, "remessa",
+    (v) => {
+      const data = isoDeValor(v.data);
+      const nominal = numero(v.nominal);
+      const pago = numero(v.pago);
+      if (!data || !nominal) return null;
+      return { data, arquivo: texto(v.arquivo), remessa: inteiroOuTexto(v.remessa), tipo: texto(v.tipo) || "URFA",
+        nominal, pago, desagio: (nominal - pago) / nominal };
+    });
+
   const observacoes = linhas(ws("Quadro de Observações"),
     { data: "A", processo: "B", status: "C", observacao: "D", responsavel: "E" }, "data",
     (v) => ({ data: isoDeValor(v.data), processo: texto(v.processo), status: texto(v.status),
@@ -125,6 +138,7 @@ function lerBases(wb) {
   return {
     visaoGeral, liquidacaoUrfa: liquidacao("Liquidação URFA"), liquidacaoEndosso: liquidacao("Liquidação Endosso"),
     baixasBauk, qiTech, aceitas, represadas, represadasAcumulado, liquidacaoPendenteAcumulado, extracaoRpe, arquivosRpe, flash, observacoes,
+    desagio,
   };
 }
 

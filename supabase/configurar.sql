@@ -169,7 +169,9 @@ begin
   if not public._acesso_ok() then
     raise exception 'VOX_SEM_ACESSO' using errcode = '42501';
   end if;
-  return coalesce((select jsonb_object_agg(chave, conteudo) from public.painel where chave = any (p_chaves)), '{}'::jsonb);
+  -- chaves "admin:..." (relatórios em teste) só vão para o administrador
+  return coalesce((select jsonb_object_agg(chave, conteudo) from public.painel
+                   where chave = any (p_chaves) and (chave not like 'admin:%' or public._admin_ok())), '{}'::jsonb);
 end $$;
 
 -- Esqueci minha senha: a senha nova fica guardada (só o hash) até o admin aprovar.

@@ -9,3 +9,5 @@ server/dados/
 # estado do publicador (o que já foi enviado para a nuvem)
 publicador/.estado.json
 publicador/.bauk-exemplo.json
+publicador/.bauk-status.json
+publicador/.bauk-datas.json

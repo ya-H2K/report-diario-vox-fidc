@@ -53,7 +53,10 @@ function informacaoDoDia(b, iso, arquivosFechados = true) {
     endosso: liquidacao(b.liquidacaoEndosso),
     baixas: false,
     arquivosRpe: tem(b.arquivosRpe),
-    flash: tem(b.flash),
+    // Flash Reports + BKs: a Bauk gera alguns minutos depois do endosso. Até o horário
+    // limite (LIMITE_FLASH_REPORT, padrão 11:00), sem arquivo processado fica "Aguardando";
+    // depois, vale a planilha ("Não processado"). Processado = OK a qualquer hora.
+    flash: false,
     represadas: tem(b.represadas) || (bauk && arquivosFechados),
   };
 }
@@ -93,6 +96,41 @@ function processamentoBauk(b, iso) {
   return { ...st(s, detalhe), itens, criterios: { endosso: sEndosso, demais: sDemais, qtdDemais: demais } };
 }
 
+// ---------- Operações repetidas em mais de um dia ----------
+// Quando uma liquidação não acontece no dia, a automação pode registrar a mesma operação de novo
+// no dia seguinte. Cada operação conta uma vez só, no dia em que foi negociada:
+//   - se a Bauk informou a data da negociação (dataBauk, gravada pelo publicador) e ela é anterior
+//     à da planilha, vale a data da Bauk;
+//   - senão, vale a primeira data em que a operação aparece na planilha.
+// Se alguma das linhas repetidas estiver "Sim" (liquidada), a operação conta como liquidada.
+function unificarOperacoes(base, dataBauk = {}) {
+  const porOp = new Map();
+  const saida = [];
+  for (const i of base || []) {
+    if (i.operacao === "" || i.operacao == null || !i.data) { saida.push(i); continue; }
+    const op = String(i.operacao);
+    const atual = porOp.get(op);
+    if (!atual) { const novo = { ...i }; porOp.set(op, novo); saida.push(novo); continue; }
+    if (i.data < atual.data) Object.assign(atual, { ...i, liquidado: atual.liquidado === "Sim" ? "Sim" : i.liquidado });
+    else if (i.liquidado === "Sim") atual.liquidado = "Sim";
+  }
+  for (const [op, i] of porOp) {
+    const d = dataBauk[op];
+    if (d && d < i.data) i.data = d;
+  }
+  return saida;
+}
+
+const basesPreparadas = new WeakMap();
+export function prepararBases(b) {
+  if (basesPreparadas.has(b)) return basesPreparadas.get(b);
+  const p = { ...b,
+    liquidacaoUrfa: unificarOperacoes(b.liquidacaoUrfa, b.dataBauk),
+    liquidacaoEndosso: unificarOperacoes(b.liquidacaoEndosso, b.dataBauk) };
+  basesPreparadas.set(b, p);
+  return p;
+}
+
 // ---------- Liquidação URFA / Endosso  (colunas L:N) ----------
 function liquidacao(itensBase, iso, semMovimento) {
   const itens = doDia(itensBase, iso).filter((i) => i.operacao !== "" || i.liquidado);
@@ -119,6 +157,10 @@ export function faseBauk(status) {
   const s = semAcento(status);
   if (FASE_APROVACAO.includes(s)) return "aprovacao";
   if (s === "negociado") return "liquidacao";
+  // variações de nome que a Bauk às vezes usa (ex.: "Aguardando Aprovação", "Pendente de assinatura")
+  if (/rejeit|erro|cancel|recus/.test(s)) return null;
+  if (/aprova|assinat|cnab|xml/.test(s)) return "aprovacao";
+  if (/negociad/.test(s)) return "liquidacao";
   return null;
 }
 const ROTULO_FASE = { aprovacao: "Aguardando Aprovações", liquidacao: "Aguardando Liquidação" };
@@ -328,9 +370,12 @@ function situacaoDoDia(b, iso, agora, horaEncerramento) {
 }
 
 export function montarDia(b, iso, { agora, horaFechamento, horaEncerramento = "18:00", limiteRpe = "14:00",
-  limiteEndosso = "15:00", limiteUrfa = "17:00", limiteArquivosBauk = "10:30", mostrarResponsavel = true }) {
+  limiteEndosso = "15:00", limiteUrfa = "17:00", limiteArquivosBauk = "10:30", limiteFlash = "11:00",
+  mostrarResponsavel = true }) {
+  b = prepararBases(b);
   const aberto = diaAberto(iso, agora, horaFechamento);
   const arquivosAbertos = aberto && diaAberto(iso, agora, limiteArquivosBauk);
+  const flashAberto = aberto && diaAberto(iso, agora, limiteFlash);
   const etapas = calcularEtapas(b, iso, {
     geral: aberto,
     arquivosFechados: !arquivosAbertos,
@@ -351,7 +396,7 @@ export function montarDia(b, iso, { agora, horaFechamento, horaEncerramento = "1
     processos,
     arquivos: [
       resumo("arquivosRpe", "Informação dos Arquivos", aplicarAberto(arquivosRpe(b, iso), aberto, info.arquivosRpe)),
-      resumo("flash", "Flash Reports + BKs", aplicarAberto(flashReports(b, iso), aberto, info.flash)),
+      resumo("flash", "Flash Reports + BKs", aplicarAberto(flashReports(b, iso), flashAberto, info.flash)),
     ],
     valores: valores(b, iso, aberto),
     observacoes: quadroObservacoes(b, iso, aberto, processos, mostrarResponsavel, !arquivosAbertos),

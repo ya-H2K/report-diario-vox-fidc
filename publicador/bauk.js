@@ -83,6 +83,7 @@ export function statusDoItem(item) {
 export async function statusDoDia(iso) {
   const t = await token();
   const saida = {};
+  const datas = {};                       // { "10988": "2026-10-05" }: dia da negociação
   let exemplo = null;
   for (let pagina = 1; pagina <= 30; pagina++) {
     const r = await fetch(`${API_V1}/Negotiation/FilterNegotiation`, {
@@ -99,9 +100,13 @@ export async function statusDoDia(iso) {
     for (const item of lote) {
       exemplo ??= item;
       const op = item.operation ?? item.Operation;
-      if (op != null) saida[String(op)] = statusDoItem(item);
+      if (op != null) {
+        saida[String(op)] = statusDoItem(item);
+        const d = String(item.dateNegotiation ?? item.DateNegotiation ?? "").slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) datas[String(op)] = d;
+      }
     }
     if (lote.length < 50) break;
   }
-  return { status: saida, exemplo };
+  return { status: saida, datas, exemplo };
 }

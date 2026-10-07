@@ -13,7 +13,7 @@ import { montarDia, isoLocal } from "../server/status.js";
 const DIA_VAZIO = "2099-01-05";
 
 export function cortesDoDia(cfg) {
-  return [...new Set([cfg.limiteRpe, cfg.limiteArquivosBauk, cfg.limiteEndosso, cfg.limiteUrfa, cfg.horaEncerramento, cfg.horaFechamento]
+  return [...new Set([cfg.limiteRpe, cfg.limiteArquivosBauk, cfg.limiteFlash, cfg.limiteEndosso, cfg.limiteUrfa, cfg.horaEncerramento, cfg.horaFechamento]
     .map(normalizarHora))].sort();
 }
 
@@ -32,7 +32,7 @@ function momento(iso, hhmm) {
 function opcoesDe(cfg, agora) {
   return { agora, horaFechamento: cfg.horaFechamento, horaEncerramento: cfg.horaEncerramento,
     limiteRpe: cfg.limiteRpe, limiteArquivosBauk: cfg.limiteArquivosBauk, limiteEndosso: cfg.limiteEndosso, limiteUrfa: cfg.limiteUrfa,
-    mostrarResponsavel: cfg.mostrarResponsavel };
+    limiteFlash: cfg.limiteFlash, mostrarResponsavel: cfg.mostrarResponsavel };
 }
 
 // Cenários de um dia: [{ desde: "HH:MM", dia }]. Dia já passado: um só (o definitivo).
@@ -74,6 +74,13 @@ export function gerarOperacional(bases, cfg, agoraReal = new Date()) {
     mostrarResponsavel: cfg.mostrarResponsavel,
   };
   return saida;
+}
+
+// Relatórios (por enquanto só o admin vê). Chaves "admin:..." só são entregues pelo banco
+// a quem é administrador (função vox_painel do supabase/configurar.sql).
+export function gerarRelatorios(bases) {
+  const linhas = [...(bases?.desagio || [])].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+  return { "admin:desagio": { linhas } };
 }
 
 // Fluxo de caixa: meses publicados (sem caminho de pasta) e o conteúdo de cada mês.

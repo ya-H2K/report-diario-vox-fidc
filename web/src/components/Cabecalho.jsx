@@ -10,6 +10,7 @@ const hhmm = (d) => (d ? new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", min
 const ABAS = [
   { id: "operacional", nome: "Fluxo Operacional", href: "#/" },
   { id: "caixa", nome: "Fluxo de Caixa", href: "#/caixa" },
+  { id: "relatorios", nome: "Relatórios", href: "#/relatorios", soAdmin: true },
   { id: "usuarios", nome: "Usuários", href: "#/usuarios", soAdmin: true },
 ];
 

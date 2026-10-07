@@ -114,6 +114,7 @@ publicador. `npm run dev` abre a interface em http://localhost:5173 já lendo do
 | `PORTA` | Porta do servidor (padrão 3001). |
 | `HORA_ENCERRAMENTO` | A partir deste horário, com liquidação ou baixas conciliadas pendentes, o dia fica "Encerrado" (padrão 18:00). |
 | `LIMITE_RPE` | Até que horas arquivos RPE faltando aparecem como "Aguardando" (padrão 14:00). |
+| `LIMITE_FLASH_REPORT` | Até que horas o card Flash Reports + BKs sem arquivo processado aparece como "Aguardando" (padrão 11:00; a Bauk gera esses arquivos alguns minutos depois do endosso). |
 | `LIMITE_LIQUIDACAO_ENDOSSO` / `LIMITE_LIQUIDACAO_URFA` | Até que horas uma liquidação sem saída no extrato aparece como "Aguardando" (padrão 15:00 e 17:00). |
 | `HORA_FECHAMENTO` | Horário a partir do qual o dia de hoje é considerado consolidado (padrão 19:00). |
 | `INTERVALO_ATUALIZACAO_MIN` | De quantos em quantos minutos a tela busca dados novos (padrão 10). |
@@ -246,8 +247,32 @@ A diferença proposital:
   URFA** (`LIMITE_LIQUIDACAO_ENDOSSO` e `LIMITE_LIQUIDACAO_URFA` no `.env`). Passado o
   horário sem a saída, fica "Não realizado". Se a saída aparecer depois, vira OK.
 
+- **Operação repetida em mais de um dia** (liquidação que não aconteceu e foi registrada de novo
+  no dia seguinte): conta uma vez só, no dia em que foi negociada na Bauk (ou, sem essa
+  informação, na primeira data em que aparece na planilha). Se alguma das linhas estiver
+  liquidada, conta como liquidada. O publicador guarda as datas da Bauk em `publicador/.bauk-datas.json`.
+- **Flash Reports + BKs**: a Bauk gera esses arquivos alguns minutos depois do endosso. Até
+  as 11h (`LIMITE_FLASH_REPORT`), sem arquivo processado, o card mostra "Aguardando
+  informações". Depois, vale a planilha: "Não processado". Com o arquivo, "Processados" a qualquer hora.
+
 O servidor usa os valores que o Excel deixou calculados no arquivo (não recalcula
 fórmulas), então a planilha precisa ter sido salva pelo Excel, como a automação faz.
+
+## Relatórios (só administrador, em teste)
+
+Aba **Relatórios** no topo, visível só para o admin. Por enquanto tem o **Deságio**: lê a aba
+"Deságio" da planilha (Data, Nome Arquivo, Remessa, Tipo, Valor Nominal, Valor Pago) e mostra o
+mês atual por padrão, com filtro por mês ou por período, totais, deságio médio ponderado pelo valor
+nominal, gráfico por remessa, tabela e botão **Baixar CSV** (do período filtrado).
+
+- O publicador envia esses dados na chave `admin:desagio`. Para o banco só entregar chaves
+  `admin:...` ao administrador, rode uma vez `supabase/relatorios-admin.sql` no SQL Editor do Supabase.
+- A automação (`preencher_fluxo_operacional_vox.py`) preenche a aba Deságio sozinha: a cada execução,
+  as cessões de URFA da Visão Geral Bauk dos últimos 45 dias que ainda não estão na aba são lançadas
+  com valor nominal (posições 127-139) e valor pago (posições 193-205) lidos do CNAB `CB_URFA_*.REM`.
+  Para conferir a leitura sem gravar nada: `python preencher_fluxo_operacional_vox.py --conferir-desagio`.
+- Para liberar aos usuários depois: tirar `soAdmin` da aba em `web/src/components/Cabecalho.jsx`,
+  tirar `"relatorios"` de `SO_ADMIN` em `web/src/App.jsx` e trocar a chave para um nome sem `admin:`.
 
 ## Estrutura
 

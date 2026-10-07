@@ -23,6 +23,9 @@ export const config = {
   // Até esse horário os arquivos da Bauk ainda estão chegando: Processamento Bauk, Baixas e
   // "Sem URFA/Sem endosso" ficam "Aguardando informações" (nunca "Não realizado").
   limiteArquivosBauk: process.env.LIMITE_ARQUIVOS_BAUK || "10:30",
+  // Flash Reports + BKs saem da Bauk alguns minutos depois do endosso: até esse horário,
+  // sem arquivo processado, o card fica "Aguardando informações" (depois, "Não processado").
+  limiteFlash: process.env.LIMITE_FLASH_REPORT || "11:00",
   // A partir deste horário, se faltar liquidação ou baixas conciliadas, o dia fica "Encerrado".
   horaEncerramento: process.env.HORA_ENCERRAMENTO || "18:00",
   limiteEndosso: process.env.LIMITE_LIQUIDACAO_ENDOSSO || "15:00",
