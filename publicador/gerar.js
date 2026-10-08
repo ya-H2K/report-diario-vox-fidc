@@ -97,6 +97,14 @@ export function gerarApresentacoes(itens) {
     ({ id, nome, bytes, publicadoEm: new Date(mtimeMs).toISOString() })) } };
 }
 
+// Balancete e Razão (só o admin vê, por enquanto): por mês, quais documentos e formatos existem.
+// Os arquivos ficam no bucket "caixa", em balancetes/AAAA-MM/{balancete|razao}.{pdf|xlsx|xls|xlsm}.
+export function gerarBalancetes(meses) {
+  const limpar = (a) => a && { nome: a.nome, ext: a.ext, bytes: a.bytes, publicadoEm: new Date(a.mtimeMs).toISOString() };
+  return { "admin:balancetes": { meses: meses.map(({ id, docs }) => ({ id, docs: Object.fromEntries(
+    Object.entries(docs).map(([doc, f]) => [doc, { pdf: limpar(f.pdf), excel: limpar(f.excel) }])) })) } };
+}
+
 // Fluxo de caixa: meses publicados (sem caminho de pasta) e o conteúdo de cada mês.
 export function gerarCaixa(meses) {
   const saida = {};

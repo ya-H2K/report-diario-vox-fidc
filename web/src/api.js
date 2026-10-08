@@ -183,6 +183,38 @@ export const apiApresentacoes = {
   },
 };
 
+// ---------------------------------------------------------------- balancete e razão (só admin, por enquanto)
+
+const caminhoBalancete = (mes, doc, arq) => `balancetes/${mes}/${doc}.${arq.ext}`;
+export const apiBalancetes = {
+  // [{ id: "AAAA-MM", docs: { balancete: { pdf?, excel? }, razao: { pdf?, excel? } } }], do mais recente ao mais antigo.
+  lista: async () => {
+    const r = await lerPainel(["admin:balancetes", "inicio"]);
+    return { meses: r["admin:balancetes"]?.meses || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+  },
+  // O arquivo (Blob), baixado com o login da pessoa.
+  arquivo: async (mes, doc, arq) => {
+    const { data, error } = await supabase.storage.from("caixa").download(caminhoBalancete(mes, doc, arq));
+    if (error || !data) {
+      const e = erroDe(error, "Arquivo indisponível no momento.");
+      e.detalhe = error?.message || String(error?.statusCode || "");
+      throw e;
+    }
+    return data;
+  },
+  // Baixa com o nome original do arquivo.
+  baixar: async (mes, doc, arq) => {
+    const { data, error } = await supabase.storage.from("caixa").createSignedUrl(caminhoBalancete(mes, doc, arq), 60, { download: arq.nome });
+    if (error || !data?.signedUrl) throw erroDe(error, "Arquivo indisponível no momento.");
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  },
+};
+
 // ---------------------------------------------------------------- login
 
 const regrasOk = (s) => s.length >= 8 && /\d/.test(s) && /[^A-Za-z0-9\s]/.test(s);

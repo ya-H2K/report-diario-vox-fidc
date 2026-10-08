@@ -19,6 +19,9 @@ export const config = {
   // ex.: "Apresentação de Resultados - FIDC VOX 09.26.pdf").
   apresentacoesPublicado: process.env.APRESENTACOES_PUBLICADO ||
     "H:\\3. Gestão\\VOX FIDC\\8.Estudos e levantamentos\\Apresentação de Resultados - Publicado",
+  // Balancete e Razão: pasta com uma subpasta por mês ("2026.09"), com os PDFs e Excel do mês.
+  balancetesPublicado: process.env.BALANCETES_PUBLICADO ||
+    "H:\\3. Gestão\\VOX FIDC\\8.Estudos e levantamentos\\Balancete e Razão - Publicado",
   // Primeiro mês que aparece no filtro do site.
   caixaDesde: process.env.CAIXA_DESDE || "2026-07",
   porta: Number(process.env.PORTA || 3001),

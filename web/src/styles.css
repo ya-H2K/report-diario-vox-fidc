@@ -662,3 +662,17 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
   .apr__campo select { min-width: 10rem; }
   .apr__ultima { padding-top: 0; }
 }
+
+/* ================================================================ balancete e razão */
+.bal__arqs { display: grid; gap: .3rem; margin-top: .8rem; font-size: .75rem; color: var(--text-dim); }
+.bal__arq { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.bal__tag { margin-left: .25rem; padding: 0 .35rem; border: 1px solid var(--line); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
+.bal__tag--pdf { border-color: var(--linha-forte); color: var(--gold); }
+.bal__falta { color: var(--linha-forte); }
+.bal__barra { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; max-width: 920px; margin: 0 auto 1.2rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.bal__abas { display: flex; gap: 1.75rem; }
+.bal__aba { margin-bottom: -1px; padding: .5rem 0; background: none; border: 0; border-bottom: 1px solid transparent; color: var(--text-dim); font: inherit; cursor: pointer; }
+.bal__aba:hover { color: var(--text); }
+.bal__aba--ativa, .bal__aba--ativa:hover { color: var(--gold-bright); border-bottom-color: var(--gold); cursor: default; }
+.bal__nome { padding-bottom: .55rem; color: var(--text-dim); font-size: .8rem; }
+.bal__aviso { max-width: 920px; margin: 0 auto; text-align: center; }

@@ -12,7 +12,8 @@ import { fileURLToPath } from "node:url";
 import { config, agora } from "../server/config.js";
 import { obterBases } from "../server/planilha.js";
 import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caixa.js";
-import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, gerarApresentacoes, cortesDoDia } from "./gerar.js";
+import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, gerarApresentacoes, gerarBalancetes, cortesDoDia } from "./gerar.js";
+import { listarBalancetes, caminhoNuvem, TIPO_CONTEUDO } from "../server/balancetes.js";
 import { listarApresentacoes } from "../server/apresentacoes.js";
 import { arquivoPublicado, lerDespesas } from "../server/despesas.js";
 import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
@@ -155,6 +156,17 @@ export async function publicar({ tudo = false } = {}) {
     }
   } catch (e) { aviso(`Apresentações: ${e.message}`); }
 
+  // Balancete e Razão: subpastas por mês na pasta de publicados
+  let balancetes = null;
+  try {
+    const r = await listarBalancetes(config.balancetesPublicado);
+    balancetes = r.meses;
+    Object.assign(mapa, gerarBalancetes(r.meses));
+    for (const n of r.ignorados) {
+      if (!avisadosApr.has(`b:${n}`)) { avisadosApr.add(`b:${n}`); aviso(`Balancete e Razão: ${n} ignorado (pasta "AAAA.MM"; arquivo com "balancete" ou "razão" no nome, em PDF ou Excel).`); }
+    }
+  } catch (e) { aviso(`Balancete e Razão: ${e.message}`); }
+
   const estado = lerEstado();
   const novos = Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, hash(v)]));
   const mudadas = Object.keys(mapa).filter((k) => tudo || estado.hashes[k] !== novos[k]);
@@ -182,6 +194,18 @@ export async function publicar({ tudo = false } = {}) {
     await enviarArquivo(sb, `apresentacoes/${a.id}.pdf`, fs.readFileSync(a.caminho), "application/pdf");
     arquivos[chave] = a.mtimeMs;
     enviados++;
+  }
+
+  for (const { id, docs } of balancetes || []) {
+    for (const [doc, formatos] of Object.entries(docs)) {
+      for (const arq of Object.values(formatos)) {
+        const destino = caminhoNuvem(id, doc, arq);
+        if (!tudo && arquivos[`bal:${destino}`] === arq.mtimeMs) continue;
+        await enviarArquivo(sb, destino, fs.readFileSync(arq.caminho), TIPO_CONTEUDO[arq.ext]);
+        arquivos[`bal:${destino}`] = arq.mtimeMs;
+        enviados++;
+      }
+    }
   }
 
   if (!mudadas.length && !apagadas.length && !enviados) return { mudadas: 0, apagadas: 0, enviados: 0 };
@@ -216,6 +240,13 @@ async function assinatura() {
       partes.push(`a:${n}:${fs.statSync(path.join(config.apresentacoesPublicado, n)).mtimeMs}`);
     }
   } catch { partes.push("sem-apresentacoes"); }
+  try {
+    for (const d of fs.readdirSync(config.balancetesPublicado).sort()) {
+      const dir = path.join(config.balancetesPublicado, d);
+      if (!fs.statSync(dir).isDirectory()) continue;
+      for (const n of fs.readdirSync(dir).sort()) partes.push(`b:${d}/${n}:${fs.statSync(path.join(dir, n)).mtimeMs}`);
+    }
+  } catch { partes.push("sem-balancetes"); }
   partes.push(hash(statusBaukParaBases()), hash(dataBauk));
   return partes.join("|");
 }
@@ -231,6 +262,7 @@ async function vigiar() {
   log(`Caixa:    ${config.caixaPublicado}`);
   log(`Despesas: ${config.despesasPublicado}`);
   log(`Apresentações: ${config.apresentacoesPublicado}`);
+  log(`Balancete e Razão: ${config.balancetesPublicado}`);
   try {
     const copiados = await prepararPublicados({ pasta: config.caixaPublicado, modeloTrabalho: config.caixaTrabalho, importar: config.caixaImportar });
     if (copiados.length) log(`Fluxo de caixa, cópia inicial: ${copiados.join(", ")}`);
