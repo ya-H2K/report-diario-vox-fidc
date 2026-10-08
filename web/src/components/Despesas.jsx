@@ -164,30 +164,60 @@ function Extrato({ linhas, mes, ant }) {
   );
 }
 
-// Pizza (rosca) com a fatia de cada categoria no mês, legenda ao lado.
+// Rosca com a fatia de cada categoria no mês, legenda ao lado.
+// As fatias crescem uma após a outra ao abrir; passando o mouse (ou o foco) numa fatia ou na
+// legenda, ela se destaca, as outras esmaecem e o centro mostra a categoria, o valor e o %.
 const COR = { gestao: 1, operacao: 2, auditoria: 3, taxas: 4, cobranca: 5, outros: 6 };
 function Pizza({ grupos, total }) {
-  const R = 54, r = 34, c = 60;
-  let ang = -Math.PI / 2;
-  const pt = (raio, a) => `${c + raio * Math.cos(a)},${c + raio * Math.sin(a)}`;
+  const [ativa, setAtiva] = useState(null);
+  const T = 168, c = T / 2, raio = 62, espessura = 22, gap = 2.5;
+  const circ = 2 * Math.PI * raio;
+  let inicio = 0;
   const fatias = grupos.map((g, k) => {
-    const a0 = ang, a1 = ang + (g.v / total) * Math.PI * 2;
-    ang = a1;
-    const grande = a1 - a0 > Math.PI ? 1 : 0;
-    const d = g.v >= total
-      ? `M${c},${c - R} A${R},${R} 0 1 1 ${c - 0.01},${c - R} L${c - 0.01},${c - r} A${r},${r} 0 1 0 ${c},${c - r} Z`
-      : `M${pt(R, a0)} A${R},${R} 0 ${grande} 1 ${pt(R, a1)} L${pt(r, a1)} A${r},${r} 0 ${grande} 0 ${pt(r, a0)} Z`;
-    return { ...g, d, cor: COR[g.id] ?? (k % 6) + 1 };
+    const frac = g.v / total;
+    const len = frac * circ;
+    const f = { ...g, frac, cor: COR[g.id] ?? (k % 6) + 1, ini: inicio,
+      traco: grupos.length > 1 ? Math.max(len - gap, 0.6) : circ };
+    inicio += len;
+    return f;
   });
+  const sel = fatias.find((f) => f.id === ativa);
   return (
-    <div className="d2-pizza">
-      <svg width={120} height={120} viewBox="0 0 120 120" role="img"
-        aria-label={fatias.map((f) => `${f.nome} ${fatia(f.v / total)}`).join(", ")}>
-        {fatias.map((f) => <path key={f.id} d={f.d} className={`d2-fill-${f.cor}`}><title>{`${f.nome}: ${brl(f.v)}`}</title></path>)}
-      </svg>
+    <div className={`d2-pizza${sel ? " d2-pizza--foco" : ""}`} onMouseLeave={() => setAtiva(null)}>
+      <div className="d2-rosca" style={{ width: T, height: T }}>
+        <svg width={T} height={T} viewBox={`0 0 ${T} ${T}`} role="img"
+          aria-label={fatias.map((f) => `${f.nome} ${fatia(f.frac)}`).join(", ")}>
+          <circle cx={c} cy={c} r={raio} className="d2-rosca__trilho" strokeWidth={espessura} />
+          {fatias.map((f, k) => (
+            <circle key={f.id} cx={c} cy={c} r={raio} transform={`rotate(-90 ${c} ${c})`}
+              className={`d2-rosca__fatia d2-stroke-${f.cor}${ativa === f.id ? " ativa" : ""}`}
+              strokeWidth={espessura}
+              style={{ strokeDasharray: `${f.traco} ${circ}`, strokeDashoffset: -f.ini, "--circ": circ, animationDelay: `${k * 120}ms` }}
+              onMouseEnter={() => setAtiva(f.id)} />
+          ))}
+        </svg>
+        <div className="d2-rosca__centro" aria-hidden="true">
+          {sel ? (
+            <>
+              <span className="d2-rosca__pct">{fatia(sel.frac)}</span>
+              <span className="d2-rosca__valor">{brl(sel.v)}</span>
+              <span className="d2-rosca__nome">{sel.nome}</span>
+            </>
+          ) : (
+            <>
+              <span className="d2-rosca__nome">{fatias.length} {fatias.length === 1 ? "categoria" : "categorias"}</span>
+              <span className="d2-rosca__dica">passe o mouse</span>
+            </>
+          )}
+        </div>
+      </div>
       <ul className="d2-pizza__legenda">
         {fatias.map((f) => (
-          <li key={f.id}><i className={`d2-cor-${f.cor}`} /><span>{f.nome}</span><b>{fatia(f.v / total)}</b></li>
+          <li key={f.id} tabIndex={0} className={ativa === f.id ? "ativa" : undefined}
+            onMouseEnter={() => setAtiva(f.id)} onFocus={() => setAtiva(f.id)} onBlur={() => setAtiva(null)}
+            aria-label={`${f.nome}: ${brl(f.v)}, ${fatia(f.frac)}`}>
+            <i className={`d2-cor-${f.cor}`} /><span>{f.nome}</span><b>{fatia(f.frac)}</b>
+          </li>
         ))}
       </ul>
     </div>

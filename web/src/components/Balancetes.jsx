@@ -78,7 +78,7 @@ export default function Balancetes({ aba, onAba, onVoltar }) {
         <div className="cabeca-pagina">
           <div>
             <button type="button" className="botao-texto relatorio__voltar" onClick={onVoltar}>← Relatórios</button>
-            <h1 className="page-title">Balancete e Razão</h1>
+            <h1 className="page-title">Balancete</h1>
             <p className="page-sub">
               Balancetes e razões mensais do FIDC Vox
               {meses?.length ? ` — ${meses.length} ${meses.length === 1 ? "mês publicado" : "meses publicados"}` : ""}
@@ -162,8 +162,8 @@ function Mes({ aba, onAba, meses, erro, mes, doc, onIr, onVoltar }) {
       <div className="pagina">
         <div className="cabeca-pagina apr__cabeca">
           <div>
-            <button type="button" className="botao-texto relatorio__voltar" onClick={onVoltar}>← Balancete e Razão</button>
-            <h1 className="page-title">Balancete e Razão</h1>
+            <button type="button" className="botao-texto relatorio__voltar" onClick={onVoltar}>← Balancete</button>
+            <h1 className="page-title">Balancete</h1>
             <p className="page-sub">FIDC Vox — {LONGOS[Number(mes.slice(5, 7)) - 1]} de {mes.slice(0, 4)}</p>
           </div>
           <div className="apr__acoes">
@@ -203,7 +203,6 @@ function Mes({ aba, onAba, meses, erro, mes, doc, onIr, onVoltar }) {
                   </button>
                 ))}
               </nav>
-              <span className="bal__nome">{(arqs.pdf || arqs.excel)?.nome.replace(/\.[^.]+$/, "") || ""}</span>
             </div>
             {arqs.pdf ? (
               <VisorPdf key={`${mes}-${doc}-${arqs.pdf.publicadoEm}`} titulo={`${nomeDoc} — ${longo(mes)}`}

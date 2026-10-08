@@ -11,10 +11,10 @@ import { brl, curta, valorNum } from "../formato.js";
 // #/relatorios = lista; #/relatorios/desagio = Deságio das cessões de URFA.
 
 const RELATORIOS = [
-  { id: "desagio", nome: "Deságio", descricao: "Valor nominal x valor pago das cessões de URFA, com o deságio de cada remessa." },
-  { id: "despesas", nome: "Despesas", descricao: "O que o fundo pagou no mês, por categoria e fornecedor." },
-  { id: "apresentacoes", nome: "Apresentações de Resultados", descricao: "As apresentações mensais do fundo, em PDF, para ver na tela ou baixar." },
-  { id: "balancetes", nome: "Balancete e Razão", descricao: "O balancete e o razão de cada mês, para ver em PDF ou baixar em PDF ou Excel." },
+  { id: "desagio", nome: "Deságio", descricao: "Deságio das aquisições." },
+  { id: "despesas", nome: "Despesas", descricao: "Detalhamento das despesas mensais." },
+  { id: "apresentacoes", nome: "Apresentação de Resultados", descricao: "Apresentações mensais do fundo." },
+  { id: "balancetes", nome: "Balancete", descricao: "Balancete e razão de cada mês." },
 ];
 
 const subDaUrl = () => window.location.hash.match(/^#\/relatorios\/([\w-]+)/)?.[1] ?? null;

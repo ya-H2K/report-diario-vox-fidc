@@ -72,7 +72,7 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
         <div className="cabeca-pagina">
           <div>
             <button type="button" className="botao-texto relatorio__voltar" onClick={onVoltar}>← Relatórios</button>
-            <h1 className="page-title">Apresentações de Resultados</h1>
+            <h1 className="page-title">Apresentação de Resultados</h1>
             <p className="page-sub">
               Apresentações mensais do FIDC Vox
               {itens?.length ? ` — ${itens.length} ${itens.length === 1 ? "publicada" : "publicadas"}` : ""}
