@@ -164,6 +164,16 @@ export const apiApresentacoes = {
     const r = await lerPainel(["admin:apresentacoes", "inicio"]);
     return { itens: r["admin:apresentacoes"]?.itens || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
   },
+  // O PDF do mês (bytes), baixado com o login da pessoa (sem link temporário).
+  arquivo: async (item) => {
+    const { data, error } = await supabase.storage.from("caixa").download(`apresentacoes/${item.id}.pdf`);
+    if (error || !data) {
+      const e = erroDe(error, "Arquivo indisponível no momento.");
+      e.detalhe = error?.message || String(error?.statusCode || "");
+      throw e;
+    }
+    return data;                                   // Blob
+  },
   // Link temporário para o PDF do mês (para ver na tela ou baixar com o nome original).
   link: async (item, { baixar = false, segundos = 600 } = {}) => {
     const { data, error } = await supabase.storage.from("caixa")

@@ -653,6 +653,7 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
 .apr__baixar:not(:disabled):hover { color: var(--gold-bright); }
 .apr__visor { display: grid; justify-items: center; }
 .apr__paginas { display: grid; gap: 1.4rem; width: 100%; max-width: 1100px; }
+.apr__quadro { width: 100%; max-width: 1100px; height: 80vh; border: 1px solid var(--line); background: #fff; }
 .apr__pagina { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 6px 20px var(--sombra); }
 @media (max-width: 760px) {
   .apr__campo select { min-width: 10rem; }

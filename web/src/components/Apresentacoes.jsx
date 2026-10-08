@@ -175,22 +175,30 @@ function Visor({ aba, onAba, itens, item, mes, erro, onTrocar, onVoltar }) {
 // Desenha as páginas do PDF uma embaixo da outra (pdf.js, carregado só quando precisa).
 function Paginas({ item }) {
   const caixa = useRef(null);
-  const [estado, setEstado] = useState({ carregando: true, erro: null, paginas: 0 });
+  const [estado, setEstado] = useState({ carregando: true, erro: null, paginas: 0, quadro: null });
 
   useEffect(() => {
     let cancelado = false;
     let doc = null;
+    let quadro = null;
     (async () => {
+      let blob = null;
+      try {
+        blob = await apiApresentacoes.arquivo(item);
+      } catch (e) {
+        console.error("[apresentações] não consegui baixar o PDF:", e.detalhe || e.message, e);
+        if (!cancelado) setEstado({ carregando: false, erro: `Não foi possível carregar o PDF (${e.detalhe || e.message}).`, paginas: 0, quadro: null });
+        return;
+      }
       try {
         const [pdfjs, { default: worker }] = await Promise.all([
           import("pdfjs-dist"),
           import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
         ]);
         pdfjs.GlobalWorkerOptions.workerSrc = worker;
-        const url = await apiApresentacoes.link(item);
-        doc = await pdfjs.getDocument({ url }).promise;
+        doc = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
         if (cancelado) return;
-        setEstado({ carregando: false, erro: null, paginas: doc.numPages });
+        setEstado({ carregando: false, erro: null, paginas: doc.numPages, quadro: null });
         const largura = Math.min(caixa.current?.clientWidth || 960, 1100);
         const escalaTela = Math.min(window.devicePixelRatio || 1, 2);
         for (let n = 1; n <= doc.numPages && !cancelado; n++) {
@@ -208,17 +216,28 @@ function Paginas({ item }) {
           caixa.current?.appendChild(canvas);
           await pagina.render({ canvas, canvasContext: canvas.getContext("2d"), viewport }).promise;
         }
-      } catch {
-        if (!cancelado) setEstado({ carregando: false, erro: "Não foi possível mostrar o PDF aqui. Use “Abrir PDF” ou “Baixar”.", paginas: 0 });
+      } catch (e) {
+        // se o desenho página a página falhar, mostra no leitor de PDF do próprio navegador
+        console.error("[apresentações] pdf.js falhou, usando o leitor do navegador:", e);
+        if (cancelado) return;
+        if (caixa.current) caixa.current.innerHTML = "";
+        quadro = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+        setEstado({ carregando: false, erro: null, paginas: 0, quadro });
       }
     })();
-    return () => { cancelado = true; doc?.destroy(); if (caixa.current) caixa.current.innerHTML = ""; };
+    return () => {
+      cancelado = true;
+      doc?.destroy();
+      if (quadro) URL.revokeObjectURL(quadro);
+      if (caixa.current) caixa.current.innerHTML = "";
+    };
   }, [item]);
 
   return (
     <div className="apr__visor">
       {estado.carregando && <p className="vazio" role="status">Carregando a apresentação…</p>}
       {estado.erro && <p className="vazio" role="alert">{estado.erro}</p>}
+      {estado.quadro && <iframe className="apr__quadro" src={estado.quadro} title="Apresentação de Resultados" />}
       <div ref={caixa} className="apr__paginas" />
     </div>
   );
