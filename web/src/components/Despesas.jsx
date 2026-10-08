@@ -197,16 +197,10 @@ function Pizza({ grupos, total }) {
           ))}
         </svg>
         <div className="d2-rosca__centro" aria-hidden="true">
-          {sel ? (
+          {sel && (
             <>
-              <span className="d2-rosca__pct">{fatia(sel.frac)}</span>
-              <span className="d2-rosca__valor">{brl(sel.v)}</span>
-              <span className="d2-rosca__nome">{sel.nome}</span>
-            </>
-          ) : (
-            <>
-              <span className="d2-rosca__nome">{fatias.length} {fatias.length === 1 ? "categoria" : "categorias"}</span>
-              <span className="d2-rosca__dica">passe o mouse</span>
+              <span key={`v-${sel.id}`} className="d2-rosca__valor">{brl(sel.v)}</span>
+              <span key={`n-${sel.id}`} className="d2-rosca__nome">{sel.nome}</span>
             </>
           )}
         </div>

@@ -621,8 +621,8 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
 .d2-rosca__centro > * { animation: d2-surge .25s ease both; }
 @keyframes d2-surge { from { opacity: 0; transform: translateY(3px); } }
 .d2-rosca__pct { font-size: 1.35rem; font-weight: 600; line-height: 1.1; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
-.d2-rosca__valor { font-size: .72rem; color: var(--text); font-variant-numeric: tabular-nums; }
-.d2-rosca__nome { max-width: 5.6rem; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); line-height: 1.3; }
+.d2-rosca__valor { font-size: .8rem; font-weight: 600; color: var(--gold-bright); line-height: 1.2; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.d2-rosca__nome { max-width: 5.6rem; margin-top: .15rem; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); line-height: 1.3; }
 .d2-rosca__dica { font-size: .62rem; color: var(--text-dim); opacity: .7; }
 .d2-pizza__legenda li { cursor: default; padding: .15rem .4rem; margin: 0 -.4rem; border-radius: 2px; transition: background .2s, color .2s, opacity .2s; }
 .d2-pizza__legenda li:focus-visible { outline: 1px solid var(--gold); outline-offset: 0; }
@@ -706,3 +706,41 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
 .bal__aba--ativa, .bal__aba--ativa:hover { color: var(--gold-bright); border-bottom-color: var(--gold); cursor: default; }
 .bal__nome { padding-bottom: .55rem; color: var(--text-dim); font-size: .8rem; }
 .bal__aviso { max-width: 920px; margin: 0 auto; text-align: center; }
+
+/* ================================================================ início (home) */
+.home { max-width: 1120px; margin: 0 auto; padding: clamp(3rem, 10vh, 7rem) 2rem 3rem; }
+.home__data { margin: 0; color: var(--text-dim); font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; }
+.home__titulo { margin: .4rem 0 .3rem; font-size: 2.1rem; font-weight: 600; }
+.home__titulo b { color: var(--gold-bright); font-weight: 600; }
+.home__sub { margin: 0 0 2.6rem; color: var(--text-dim); }
+.home__grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+.home__grade--2 { grid-template-columns: repeat(2, minmax(0, 24rem)); }
+.home__card {
+  position: relative; display: flex; flex-direction: column; min-height: 15.5rem; padding: 1.8rem 1.8rem 1.5rem;
+  background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--gold);
+  color: var(--text); text-decoration: none; transition: border-color .2s, background .2s, transform .2s;
+}
+.home__card:hover, .home__card:focus-visible { border-color: var(--gold); background: var(--realce); transform: translateY(-2px); }
+.home__icone { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 1.3rem; border: 1px solid var(--linha-forte); color: var(--gold); }
+.home__nome { margin-bottom: .4rem; font-size: 1.25rem; font-weight: 600; color: var(--gold-bright); }
+.home__texto { color: var(--text-dim); font-size: .9rem; line-height: 1.5; }
+.home__rodape { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: auto; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .82rem; }
+.home__card .home__rodape { margin-top: auto; }
+.home__texto { margin-bottom: 1.2rem; }
+.home__info { color: var(--text-dim); }
+.home__estado { display: inline-flex; align-items: center; gap: .45rem; }
+.home__abrir { color: var(--gold); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.home__admin { position: absolute; top: 1.1rem; right: 1.2rem; padding: .05rem .4rem; border: 1px solid var(--line); color: var(--text-dim); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
+.home__usuarios {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 1.6rem; padding: 1rem 1.4rem;
+  border: 1px solid var(--line); color: var(--text-dim); font-size: .85rem; text-decoration: none; transition: border-color .2s;
+}
+.home__usuarios b { color: var(--text); font-weight: 400; }
+.home__usuarios:hover, .home__usuarios:focus-visible { border-color: var(--gold); }
+.home__usuarios-link { color: var(--gold); }
+@media (max-width: 860px) {
+  .home__grade, .home__grade--2 { grid-template-columns: 1fr; }
+  .home__titulo { font-size: 1.7rem; }
+  .home__card { min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .home__card { transition: none; } .home__card:hover { transform: none; } }

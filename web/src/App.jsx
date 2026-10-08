@@ -4,19 +4,21 @@ import Caixa from "./components/Caixa.jsx";
 import Usuarios from "./components/Usuarios.jsx";
 import Relatorios from "./components/Relatorios.jsx";
 import Acesso from "./components/Acesso.jsx";
+import Home from "./components/Home.jsx";
 import { apiAuth } from "./api.js";
 import { SessaoContexto } from "./sessao.js";
 
-// Abas: Fluxo operacional (#/), Fluxo de caixa (#/caixa) e, só para o admin, Relatórios
-// (#/relatorios, #/relatorios/desagio) e Usuários (#/usuarios).
+// Início (#/), Fluxo operacional (#/report), Fluxo de caixa (#/caixa) e, só para o admin,
+// Relatórios (#/relatorios, #/relatorios/desagio...) e Usuários (#/usuarios).
 const SO_ADMIN = ["usuarios", "relatorios"];
-const HREF = { operacional: "#/", caixa: "#/caixa", usuarios: "#/usuarios", relatorios: "#/relatorios" };
+const HREF = { home: "#/", operacional: "#/report", caixa: "#/caixa", usuarios: "#/usuarios", relatorios: "#/relatorios" };
 const abaDaUrl = () => {
   const h = window.location.hash;
   if (h.startsWith("#/caixa")) return "caixa";
   if (h.startsWith("#/usuarios")) return "usuarios";
   if (h.startsWith("#/relatorios")) return "relatorios";
-  return "operacional";
+  if (h.startsWith("#/report")) return "operacional";
+  return "home";
 };
 
 export default function App() {
@@ -51,12 +53,15 @@ export default function App() {
   const contexto = useMemo(() => ({ usuario, sair }), [usuario, sair]);
 
   if (usuario === undefined) return <div className="acesso"><p className="acesso__carregando">Carregando…</p></div>;
-  if (!usuario) return <Acesso onEntrar={setUsuario} />;
+  // depois do login, sempre começa no início
+  const entrar = (u) => { window.location.hash = "#/"; setAba("home"); setUsuario(u); };
+  if (!usuario) return <Acesso onEntrar={entrar} />;
 
-  const abaVisivel = SO_ADMIN.includes(aba) && !usuario.admin ? "operacional" : aba;
+  const abaVisivel = SO_ADMIN.includes(aba) && !usuario.admin ? "home" : aba;
   return (
     <SessaoContexto.Provider value={contexto}>
-      {abaVisivel === "caixa" ? <Caixa aba={abaVisivel} onAba={onAba} />
+      {abaVisivel === "home" ? <Home aba={abaVisivel} onAba={onAba} />
+        : abaVisivel === "caixa" ? <Caixa aba={abaVisivel} onAba={onAba} />
         : abaVisivel === "usuarios" ? <Usuarios aba={abaVisivel} onAba={onAba} />
           : abaVisivel === "relatorios" ? <Relatorios aba={abaVisivel} onAba={onAba} />
             : <Operacional aba={abaVisivel} onAba={onAba} />}

@@ -10,7 +10,7 @@ import { brl, curta, valorNum } from "../formato.js";
 // Aba "Relatórios" (só o admin vê, por enquanto): lista de relatórios e cada relatório.
 // #/relatorios = lista; #/relatorios/desagio = Deságio das cessões de URFA.
 
-const RELATORIOS = [
+export const RELATORIOS = [
   { id: "desagio", nome: "Deságio", descricao: "Deságio das aquisições." },
   { id: "despesas", nome: "Despesas", descricao: "Detalhamento das despesas mensais." },
   { id: "apresentacoes", nome: "Apresentação de Resultados", descricao: "Apresentações mensais do fundo." },

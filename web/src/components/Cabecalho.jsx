@@ -8,7 +8,7 @@ import { LogoH2, LogoVox } from "./Logos.jsx";
 const hhmm = (d) => (d ? new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(d) : "");
 
 const ABAS = [
-  { id: "operacional", nome: "Fluxo Operacional", href: "#/" },
+  { id: "operacional", nome: "Fluxo Operacional", href: "#/report" },
   { id: "caixa", nome: "Fluxo de Caixa", href: "#/caixa" },
   { id: "relatorios", nome: "Relatórios", href: "#/relatorios", soAdmin: true },
   { id: "usuarios", nome: "Usuários", href: "#/usuarios", soAdmin: true },
@@ -29,19 +29,20 @@ function usePendentes(ativo) {
 }
 
 // Barra superior: marca, abas do site e, à direita, a navegação da aba aberta.
-export function BarraTopo({ aba, onAba, children }) {
+// No início (home) as abas não aparecem no topo: ficam em destaque no meio da página.
+export function BarraTopo({ aba, onAba, children, semAbas = false }) {
   const { usuario } = useSessao();
   const abas = ABAS.filter((a) => !a.soAdmin || usuario?.admin);
   const pendentes = usePendentes(usuario?.admin);
   return (
     <header className="topbar">
       <div className="topbar__esquerda">
-        <a className="marca" href="#/" title="Ir para o Report Operacional"
-          onClick={(e) => { e.preventDefault(); onAba("operacional"); }}>
+        <a className="marca" href="#/" title="Ir para o início"
+          onClick={(e) => { e.preventDefault(); onAba("home"); }}>
           <LogoH2 />
           <span className="brand">Vox FIDC</span>
         </a>
-        <nav className="abas" aria-label="Telas do site">
+        {!semAbas && <nav className="abas" aria-label="Telas do site">
           {abas.map((a) => (
             <a key={a.id} href={a.href}
               className={`aba${aba === a.id ? " aba--ativa" : ""}`}
@@ -51,7 +52,7 @@ export function BarraTopo({ aba, onAba, children }) {
               {a.id === "usuarios" && pendentes > 0 && <span className="aba__contador" title="Solicitações pendentes">{pendentes}</span>}
             </a>
           ))}
-        </nav>
+        </nav>}
       </div>
       <div className="topbar__direita">
         {children}
