@@ -344,3 +344,85 @@ export function GraficoEnquadramento({ linhas, selecionada, onSelecionar }) {
     </Cartao>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Rendimento das aplicações: uma coluna por dia; tracejado = média diária do mês.
+// Ao lado do título, o total do mês. Clique seleciona o dia (igual aos outros gráficos).
+export function GraficoRendimento({ linhas, selecionada, onSelecionar }) {
+  const [ref, largura] = useLargura();
+  const [ativo, setAtivo] = useState(null);
+  const dias = linhas.filter((l) => !l.abertura);
+  if (!dias.length) return null;
+  const total = dias.reduce((t, d) => t + (d.rendimento || 0), 0);
+  const comValor = dias.filter((d) => d.rendimento);
+  const media = comValor.length ? total / comValor.length : 0;
+  const { topo, ticks } = escala(Math.max(...dias.map((d) => d.rendimento || 0), media));
+  const w = largura || 600;
+  const faixa = (w - M.left - M.right) / dias.length;
+  const barra = Math.max(3, Math.min(22, faixa * 0.55));
+  const centro = (i) => M.left + faixa * (i + 0.5);
+  const y = (v) => M.top + (1 - v / topo) * (ALTURA - M.top - M.bottom);
+  const base = y(0);
+  const ks = dias.findIndex((d) => d.data === selecionada);
+  const d = ativo != null ? dias[ativo] : null;
+  // saldo aplicado no início do dia = saldo de aplicações da linha anterior
+  const aplicadoAntes = (data) => {
+    const k = linhas.findIndex((l) => l.data === data);
+    return k > 0 ? linhas[k - 1].saldoAplicacoes : null;
+  };
+  const acumuladoAte = (i) => dias.slice(0, i + 1).reduce((t, x) => t + (x.rendimento || 0), 0);
+  const taxa = (dia) => { const s = aplicadoAntes(dia.data); return s ? (dia.rendimento || 0) / s : null; };
+  const pct3 = (v) => `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}%`;
+  const mil = (v) => (!v ? "R$ 0" : Math.abs(v) >= 1e6 ? milhoes(v, 2) : `R$ ${(v / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`);
+
+  const mover = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const i = Math.floor((e.clientX - r.left - M.left) / faixa);
+    setAtivo(i >= 0 && i < dias.length ? i : null);
+  };
+
+  return (
+    <Cartao titulo="Rendimento das aplicações" lateral={
+      <span className="card--tabela__nota"><b className="graf__total">{brl(total)}</b> no mês · média de {mil(media)} por dia (tracejado)</span>}>
+      <div className="graf" ref={ref}>
+        {largura > 0 && (
+          <svg width={w} height={ALTURA} role="img" className="graf__svg--clicavel"
+            aria-label={`Rendimento diário das aplicações; total de ${brl(total)} no mês`}
+            onPointerMove={mover} onPointerLeave={() => setAtivo(null)}
+            onClick={() => ativo != null && onSelecionar?.(dias[ativo].data)}>
+            <Grade ticks={ticks} y={y} largura={w} formato={(t) => mil(t)} />
+            <EixoX itens={dias} xDe={centro} largura={w} selecionada={selecionada} />
+            {ks >= 0 && <rect x={centro(ks) - faixa / 2} y={M.top} width={faixa} height={base - M.top} className="graf__faixa-sel" />}
+            {d && ativo !== ks && <rect x={centro(ativo) - faixa / 2} y={M.top} width={faixa} height={base - M.top} className="graf__foco" />}
+            {dias.map((dia, i) => {
+              const v = dia.rendimento || 0;
+              const apagado = ks >= 0 && i !== ks && ativo !== i;
+              return <rect key={dia.data} x={centro(i) - barra / 2} y={y(v)} width={barra} height={base - y(v)}
+                className={`graf__barra--rend${i === ks ? " sel" : ""}`} opacity={apagado ? 0.35 : 1} />;
+            })}
+            {media > 0 && (
+              <g pointerEvents="none">
+                <line x1={M.left} x2={w - M.right} y1={y(media)} y2={y(media)} className="graf__guia" />
+              </g>
+            )}
+            {ks >= 0 && (
+              <Etiqueta x={limitar(centro(ks), M.left + 40, w - M.right - 40)} y={y(dias[ks].rendimento || 0) - 16}
+                largura={80} texto={mil(dias[ks].rendimento || 0)} />
+            )}
+            <line x1={M.left} x2={w - M.right} y1={base} y2={base} className="graf__base" />
+          </svg>
+        )}
+        <Dica estilo={d ? { top: 0, left: limitar(centro(ativo), 100, w - 100), transform: "translateX(-50%)" } : null}>
+          {d && (
+            <>
+              <strong>{curta(d.data)}</strong>
+              <span>Rendimento {brl(d.rendimento || 0)}</span>
+              {taxa(d) != null && <span>{pct3(taxa(d))} sobre {milhoes(aplicadoAntes(d.data), 1)} aplicados</span>}
+              <span>Acumulado no mês {brl(acumuladoAte(ativo))}</span>
+            </>
+          )}
+        </Dica>
+      </div>
+    </Cartao>
+  );
+}

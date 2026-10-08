@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiCaixa } from "../api.js";
 import { BarraTopo } from "./Cabecalho.jsx";
-import { GraficoSaldo, GraficoEntradasSaidas, GraficoEnquadramento } from "./Graficos.jsx";
+import { GraficoSaldo, GraficoEntradasSaidas, GraficoEnquadramento, GraficoRendimento } from "./Graficos.jsx";
 import { useAutoAtualizacao } from "../hooks/useAutoAtualizacao.js";
 import { brl, curta, pct, valorNum } from "../formato.js";
 
@@ -309,7 +309,10 @@ export default function Caixa({ aba, onAba }) {
               <GraficoSaldo linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
               <GraficoEntradasSaidas linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
             </div>
-            <GraficoEnquadramento linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
+            <div className="grade grade--graficos">
+              <GraficoEnquadramento linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
+              <GraficoRendimento linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
+            </div>
             <Tabela linhas={dados.linhas} selecionada={dia?.data ?? null} onSelecionar={selecionar} />
           </main>
         )}

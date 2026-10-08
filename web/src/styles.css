@@ -614,3 +614,8 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
 .d2-pizza__legenda { min-width: 13rem; }
 .d2-pizza__legenda li { grid-template-columns: .65rem 1fr auto; }
 .d2-pizza__legenda b { text-align: right; }
+
+/* fluxo de caixa: rendimento das aplicações */
+.graf__barra--rend { fill: var(--gold); opacity: .85; }
+.graf__barra--rend.sel { fill: var(--gold-bright); opacity: 1; }
+.graf__total { color: var(--gold-bright); font-weight: 600; font-size: .85rem; }
