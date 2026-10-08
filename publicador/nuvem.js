@@ -25,10 +25,8 @@ export async function apagarChaves(sb, chaves) {
   if (error) throw new Error(`Supabase (apagar dados antigos): ${error.message}`);
 }
 
-export async function enviarArquivo(sb, caminhoNuvem, buffer) {
-  const { error } = await sb.storage.from("caixa").upload(caminhoNuvem, buffer, {
-    upsert: true,
-    contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  if (error) throw new Error(`Supabase (enviar planilha do caixa): ${error.message}`);
+export async function enviarArquivo(sb, caminhoNuvem, buffer,
+  contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+  const { error } = await sb.storage.from("caixa").upload(caminhoNuvem, buffer, { upsert: true, contentType });
+  if (error) throw new Error(`Supabase (enviar ${caminhoNuvem}): ${error.message}`);
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiRelatorios } from "../api.js";
 import { BarraTopo } from "./Cabecalho.jsx";
 import Despesas from "./Despesas.jsx";
+import Apresentacoes from "./Apresentacoes.jsx";
 import { useAutoAtualizacao } from "../hooks/useAutoAtualizacao.js";
 import { brl, curta, valorNum } from "../formato.js";
 
@@ -11,6 +12,7 @@ import { brl, curta, valorNum } from "../formato.js";
 const RELATORIOS = [
   { id: "desagio", nome: "Deságio", descricao: "Valor nominal x valor pago das cessões de URFA, com o deságio de cada remessa." },
   { id: "despesas", nome: "Despesas", descricao: "O que o fundo pagou no mês, por categoria e fornecedor." },
+  { id: "apresentacoes", nome: "Apresentações de Resultados", descricao: "As apresentações mensais do fundo, em PDF, para ver na tela ou baixar." },
 ];
 
 const subDaUrl = () => window.location.hash.match(/^#\/relatorios\/([\w-]+)/)?.[1] ?? null;
@@ -25,6 +27,7 @@ export default function Relatorios({ aba, onAba }) {
   const abrir = (id) => { window.location.hash = id ? `#/relatorios/${id}` : "#/relatorios"; setSub(id); window.scrollTo(0, 0); };
 
   if (sub === "desagio") return <Desagio aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
+  if (sub === "apresentacoes") return <Apresentacoes aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
   if (sub === "despesas") return <Despesas aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
   return (
     <>

@@ -156,6 +156,23 @@ export const apiRelatorios = {
   },
 };
 
+// ---------------------------------------------------------------- apresentações de resultados (só admin, por enquanto)
+
+export const apiApresentacoes = {
+  // Lista dos PDFs publicados: [{ id: "AAAA-MM", nome, bytes, publicadoEm }], do mais recente ao mais antigo.
+  lista: async () => {
+    const r = await lerPainel(["admin:apresentacoes", "inicio"]);
+    return { itens: r["admin:apresentacoes"]?.itens || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+  },
+  // Link temporário para o PDF do mês (para ver na tela ou baixar com o nome original).
+  link: async (item, { baixar = false, segundos = 600 } = {}) => {
+    const { data, error } = await supabase.storage.from("caixa")
+      .createSignedUrl(`apresentacoes/${item.id}.pdf`, segundos, baixar ? { download: item.nome } : undefined);
+    if (error || !data?.signedUrl) throw erroDe(error, "Arquivo indisponível no momento.");
+    return data.signedUrl;
+  },
+};
+
 // ---------------------------------------------------------------- login
 
 const regrasOk = (s) => s.length >= 8 && /\d/.test(s) && /[^A-Za-z0-9\s]/.test(s);

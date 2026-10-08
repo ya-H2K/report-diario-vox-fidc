@@ -619,3 +619,42 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
 .graf__barra--rend { fill: var(--gold); opacity: .85; }
 .graf__barra--rend.sel { fill: var(--gold-bright); opacity: 1; }
 .graf__total { color: var(--gold-bright); font-weight: 600; font-size: .85rem; }
+
+/* ================================================================ apresentações de resultados */
+.apr__ultima { margin: 0; padding-top: 2rem; color: var(--gold); font-size: .9rem; }
+.apr__grupo { margin-bottom: 2.2rem; }
+.apr__ano { display: flex; align-items: baseline; gap: .5rem; margin: 0 0 .9rem; font-size: 1rem; font-weight: 600; }
+.apr__ano span { color: var(--text-dim); font-size: .8rem; font-weight: 400; }
+.apr__grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: 1rem; }
+.apr__card {
+  display: flex; flex-direction: column; text-decoration: none; color: var(--text);
+  background: var(--surface); border: 1px solid var(--line); border-top: 1px solid var(--gold);
+  transition: border-color .15s, background .15s;
+}
+.apr__card:hover, .apr__card:focus-visible { border-color: var(--gold); background: var(--realce); }
+.apr__corpo { display: grid; padding: 1.2rem 1.3rem 1.1rem; }
+.apr__doc { width: 30px; height: 40px; margin-bottom: 1.2rem; padding: 6px 5px; background: #f5f2ec; border-top: 4px solid #c9b48a; }
+.apr__doc i { display: block; height: 2px; margin: 4px 0; background: #b8ab92; }
+.apr__doc i:nth-child(2) { width: 70%; }
+.apr__nome { font-size: 1rem; }
+.apr__mes { margin-top: .15rem; color: var(--text-dim); font-size: .82rem; letter-spacing: .06em; }
+.apr__data { margin-top: .6rem; color: var(--text-dim); font-size: .72rem; }
+.apr__rodape { display: flex; justify-content: space-between; margin-top: auto; padding: .75rem 1.3rem; border-top: 1px solid var(--line); color: var(--text-dim); font-size: .85rem; }
+.apr__abrir { color: var(--gold); }
+.apr__cabeca { align-items: flex-end; }
+.apr__acoes { display: flex; align-items: flex-end; gap: .75rem; flex-wrap: wrap; }
+.apr__campo { display: grid; gap: .35rem; }
+.apr__campo span { color: var(--text-dim); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+.apr__campo select {
+  height: 2.3rem; min-width: 14rem; padding: 0 .75rem; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 0; color: var(--text); color-scheme: var(--esquema); cursor: pointer;
+}
+.apr__baixar { align-self: center; padding-top: 1.4rem; color: var(--text-dim); }
+.apr__baixar:not(:disabled):hover { color: var(--gold-bright); }
+.apr__visor { display: grid; justify-items: center; }
+.apr__paginas { display: grid; gap: 1.4rem; width: 100%; max-width: 1100px; }
+.apr__pagina { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 6px 20px var(--sombra); }
+@media (max-width: 760px) {
+  .apr__campo select { min-width: 10rem; }
+  .apr__ultima { padding-top: 0; }
+}

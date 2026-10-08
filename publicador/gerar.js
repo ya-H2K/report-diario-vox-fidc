@@ -90,6 +90,13 @@ export function gerarDespesas(despesas, arquivo) {
     arquivo: { nome: arquivo.nome, publicadoEm: new Date(arquivo.mtimeMs).toISOString() } } };
 }
 
+// Apresentações de Resultados (só o admin vê, por enquanto): a lista dos PDFs, do mais recente
+// para o mais antigo. O PDF fica no bucket "caixa", em apresentacoes/AAAA-MM.pdf.
+export function gerarApresentacoes(itens) {
+  return { "admin:apresentacoes": { itens: itens.map(({ id, nome, mtimeMs, bytes }) =>
+    ({ id, nome, bytes, publicadoEm: new Date(mtimeMs).toISOString() })) } };
+}
+
 // Fluxo de caixa: meses publicados (sem caminho de pasta) e o conteúdo de cada mês.
 export function gerarCaixa(meses) {
   const saida = {};

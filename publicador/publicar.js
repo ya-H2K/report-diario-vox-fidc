@@ -12,7 +12,8 @@ import { fileURLToPath } from "node:url";
 import { config, agora } from "../server/config.js";
 import { obterBases } from "../server/planilha.js";
 import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caixa.js";
-import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, cortesDoDia } from "./gerar.js";
+import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, gerarApresentacoes, cortesDoDia } from "./gerar.js";
+import { listarApresentacoes } from "../server/apresentacoes.js";
 import { arquivoPublicado, lerDespesas } from "../server/despesas.js";
 import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
 import { statusDoDia } from "./bauk.js";
@@ -114,6 +115,7 @@ function conferirBauk(brutas) {
   }
 }
 
+const avisadosApr = new Set();
 const statusBaukParaBases = () => (bauk.iso && bauk.status ? { [bauk.iso]: bauk.status } : {});
 
 // Monta tudo e envia só o que mudou desde o último envio.
@@ -142,6 +144,17 @@ export async function publicar({ tudo = false } = {}) {
     if (despesasArq) Object.assign(mapa, gerarDespesas(await lerDespesas(despesasArq.caminho), despesasArq));
   } catch (e) { aviso(`Despesas: ${e.message}`); despesasArq = null; }
 
+  // Apresentações de Resultados: os PDFs da pasta de publicados (um por mês)
+  let apresentacoes = null;
+  try {
+    const r = await listarApresentacoes(config.apresentacoesPublicado);
+    apresentacoes = r.itens;
+    Object.assign(mapa, gerarApresentacoes(r.itens));
+    for (const n of r.ignorados) {
+      if (!avisadosApr.has(n)) { avisadosApr.add(n); aviso(`Apresentações: "${n}" ignorado (o nome precisa terminar com o mês, ex.: "... 09.26.pdf").`); }
+    }
+  } catch (e) { aviso(`Apresentações: ${e.message}`); }
+
   const estado = lerEstado();
   const novos = Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, hash(v)]));
   const mudadas = Object.keys(mapa).filter((k) => tudo || estado.hashes[k] !== novos[k]);
@@ -160,6 +173,14 @@ export async function publicar({ tudo = false } = {}) {
   if (despesasArq && (tudo || arquivos.despesas !== despesasArq.mtimeMs)) {
     await enviarArquivo(sb, "despesas/atual.xlsx", fs.readFileSync(despesasArq.caminho));
     arquivos.despesas = despesasArq.mtimeMs;
+    enviados++;
+  }
+
+  for (const a of apresentacoes || []) {
+    const chave = `apr:${a.id}`;
+    if (!tudo && arquivos[chave] === a.mtimeMs) continue;
+    await enviarArquivo(sb, `apresentacoes/${a.id}.pdf`, fs.readFileSync(a.caminho), "application/pdf");
+    arquivos[chave] = a.mtimeMs;
     enviados++;
   }
 
@@ -189,13 +210,19 @@ async function assinatura() {
       partes.push(`d:${n}:${fs.statSync(path.join(config.despesasPublicado, n)).mtimeMs}`);
     }
   } catch { partes.push("sem-despesas"); }
+  try {
+    for (const n of fs.readdirSync(config.apresentacoesPublicado).sort()) {
+      if (n.startsWith("~$") || !/\.pdf$/i.test(n)) continue;
+      partes.push(`a:${n}:${fs.statSync(path.join(config.apresentacoesPublicado, n)).mtimeMs}`);
+    }
+  } catch { partes.push("sem-apresentacoes"); }
   partes.push(hash(statusBaukParaBases()), hash(dataBauk));
   return partes.join("|");
 }
 
 function resumo(r) {
   if (!r.mudadas && !r.apagadas && !r.enviados) return "nada mudou, nada a enviar.";
-  return `enviado! (${r.mudadas} bloco(s) de dados${r.enviados ? `, ${r.enviados} planilha(s) para download` : ""})`;
+  return `enviado! (${r.mudadas} bloco(s) de dados${r.enviados ? `, ${r.enviados} arquivo(s) para download` : ""})`;
 }
 
 async function vigiar() {
@@ -203,6 +230,7 @@ async function vigiar() {
   log(`Planilha: ${config.planilha}`);
   log(`Caixa:    ${config.caixaPublicado}`);
   log(`Despesas: ${config.despesasPublicado}`);
+  log(`Apresentações: ${config.apresentacoesPublicado}`);
   try {
     const copiados = await prepararPublicados({ pasta: config.caixaPublicado, modeloTrabalho: config.caixaTrabalho, importar: config.caixaImportar });
     if (copiados.length) log(`Fluxo de caixa, cópia inicial: ${copiados.join(", ")}`);
