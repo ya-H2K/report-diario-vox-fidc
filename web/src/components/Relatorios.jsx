@@ -17,6 +17,8 @@ export const RELATORIOS = [
   { id: "balancetes", nome: "Balancete", descricao: "Balancete e razão de cada mês." },
   { id: "laminas", nome: "Lâmina", descricao: "Lâminas mensais do fundo." },
 ];
+// Na tela, em ordem alfabética (ignorando acentos e maiúsculas).
+RELATORIOS.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
 
 const subDaUrl = () => window.location.hash.match(/^#\/relatorios\/([\w-]+)/)?.[1] ?? null;
 

@@ -58,7 +58,7 @@ export default function Home({ aba, onAba }) {
     },
     {
       id: "relatorios", titulo: "Relatórios",
-      texto: "Deságio, despesas, apresentação de resultados, balancete e lâmina.",
+      texto: "Apresentação de resultados, balancete, deságio, despesas e lâmina.",
       rodape: <span className="home__info">{RELATORIOS.length} relatórios</span>,
     },
   ];
