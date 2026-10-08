@@ -5,7 +5,7 @@ import { useAutoAtualizacao } from "../hooks/useAutoAtualizacao.js";
 
 // Relatórios > Apresentações de Resultados.
 //   #/relatorios/apresentacoes          lista (cards por ano)
-//   #/relatorios/apresentacoes/AAAA-MM  o PDF do mês na tela, com "Abrir PDF" e "Baixar"
+//   #/relatorios/apresentacoes/AAAA-MM  o PDF do mês na tela, com "Baixar PDF"
 // Os PDFs vêm da pasta de publicados (publicador/publicar.js → bucket "caixa", apresentacoes/AAAA-MM.pdf).
 
 const LONGOS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -21,6 +21,10 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
   const [erro, setErro] = useState(null);
   const [meta, setMeta] = useState(null);
   const [mes, setMes] = useState(mesDaUrl());
+  const [ordem, setOrdem] = useState(() => {               // "recentes" | "antigas" (lembrado neste navegador)
+    try { return localStorage.getItem("vox:apr-ordem") === "antigas" ? "antigas" : "recentes"; } catch { return "recentes"; }
+  });
+  const trocarOrdem = (o) => { setOrdem(o); try { localStorage.setItem("vox:apr-ordem", o); } catch { /* sem problema */ } };
 
   useEffect(() => {
     const aoMudar = () => setMes(mesDaUrl());
@@ -51,9 +55,10 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
   const item = mes && itens ? itens.find((i) => i.id === mes) : null;
   if (mes) return <Visor aba={aba} onAba={onAba} itens={itens} item={item} mes={mes} erro={erro} onTrocar={abrir} onVoltar={() => abrir(null)} />;
 
-  // agrupado por ano, do mais recente para o mais antigo
+  // agrupado por ano, na ordem escolhida (a lista chega do mais recente para o mais antigo)
+  const ordenados = ordem === "antigas" ? [...(itens || [])].reverse() : itens || [];
   const anos = [];
-  for (const i of itens || []) {
+  for (const i of ordenados) {
     const a = i.id.slice(0, 4);
     if (!anos.length || anos.at(-1)[0] !== a) anos.push([a, []]);
     anos.at(-1)[1].push(i);
@@ -72,7 +77,17 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
               {itens?.length ? ` — ${itens.length} ${itens.length === 1 ? "publicada" : "publicadas"}` : ""}
             </p>
           </div>
-          {itens?.length > 0 && <p className="apr__ultima">Última edição: {curto(itens[0].id)}</p>}
+          {itens?.length > 0 && (
+            <div className="apr__lado">
+              <p className="apr__ultima">Última edição: {curto(itens[0].id)}</p>
+              <span className="contexto__seg apr__ordem" role="group" aria-label="Ordem das apresentações">
+                <button type="button" className={ordem === "recentes" ? "on" : undefined} aria-pressed={ordem === "recentes"}
+                  onClick={() => trocarOrdem("recentes")}>Mais recentes</button>
+                <button type="button" className={ordem === "antigas" ? "on" : undefined} aria-pressed={ordem === "antigas"}
+                  onClick={() => trocarOrdem("antigas")}>Ordem de data</button>
+              </span>
+            </div>
+          )}
         </div>
 
         {erro && !itens ? (
@@ -113,14 +128,6 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
 function Visor({ aba, onAba, itens, item, mes, erro, onTrocar, onVoltar }) {
   const [falha, setFalha] = useState(null);
 
-  const abrirPdf = async () => {
-    if (!item) return;
-    const janela = window.open("", "_blank");            // abre já no clique (evita bloqueio de pop-up)
-    try {
-      const url = await apiApresentacoes.link(item);
-      if (janela) janela.location.href = url; else window.location.href = url;
-    } catch (e) { janela?.close(); setFalha(e.message); }
-  };
   const baixar = async () => {
     if (!item) return;
     try {
@@ -152,8 +159,9 @@ function Visor({ aba, onAba, itens, item, mes, erro, onTrocar, onVoltar }) {
                 {(itens || []).map((i) => <option key={i.id} value={i.id}>{curto(i.id)}</option>)}
               </select>
             </label>
-            <button type="button" className="button button--pequeno" onClick={abrirPdf} disabled={!item}>Abrir PDF</button>
-            <button type="button" className="botao-texto apr__baixar" onClick={baixar} disabled={!item}>Baixar</button>
+            <button type="button" className="button button--pequeno" onClick={baixar} disabled={!item}>
+              <span aria-hidden="true">↓</span> Baixar PDF
+            </button>
           </div>
         </div>
 
@@ -199,7 +207,7 @@ function Paginas({ item }) {
         doc = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
         if (cancelado) return;
         setEstado({ carregando: false, erro: null, paginas: doc.numPages, quadro: null });
-        const largura = Math.min(caixa.current?.clientWidth || 960, 1100);
+        const largura = Math.min(caixa.current?.clientWidth || 900, 920);
         const escalaTela = Math.min(window.devicePixelRatio || 1, 2);
         for (let n = 1; n <= doc.numPages && !cancelado; n++) {
           const pagina = await doc.getPage(n);

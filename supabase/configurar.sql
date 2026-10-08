@@ -266,7 +266,7 @@ revoke all on function public._cpf_valido(text), public._senha_valida(text), pub
 
 grant execute on function public.vox_dominios(), public.vox_pedir_nova_senha(text, text) to anon, authenticated;
 grant execute on function public.vox_eu(), public.vox_painel(text[]), public.vox_admin_pendentes(),
-  public.vox_admin_usuarios(), public.vox_admin_acao(uuid, text), public._acesso_ok() to authenticated;
+  public.vox_admin_usuarios(), public.vox_admin_acao(uuid, text), public._acesso_ok(), public._admin_ok() to authenticated;
 
 -- ---------------------------------------------------------------- arquivos do fluxo de caixa
 

@@ -4,6 +4,9 @@
 --  (Os dados da tela já são só do admin pela regra do relatorios-admin.sql.)
 -- =====================================================================
 
+-- a regra abaixo usa _admin_ok(): quem está logado precisa poder chamá-la (só diz se a própria pessoa é admin)
+grant execute on function public._admin_ok() to authenticated;
+
 drop policy if exists "vox caixa leitura" on storage.objects;
 create policy "vox caixa leitura" on storage.objects for select to authenticated
   using (bucket_id = 'caixa' and public._acesso_ok()
