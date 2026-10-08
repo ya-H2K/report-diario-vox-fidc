@@ -20,7 +20,7 @@ const dataExtenso = () => new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO, wee
 
 const ICONES = {
   operacional: <path d="M3 3h14v14H3z M6 13l3-3 2 2 3-4" />,
-  caixa: <path d="M3 16h14M5 13V9M9 13V5M13 13V8M17 13V3" />,
+  caixa: <path d="M10 2.5v15M13.6 6.3c-.6-1.2-1.9-1.9-3.6-1.9-2 0-3.4 1-3.4 2.6 0 3.6 7 1.9 7 5.5 0 1.6-1.5 2.7-3.6 2.7-1.8 0-3.2-.8-3.8-2.1" />,
   relatorios: <><path d="M5 2h7l4 4v12H5z" /><path d="M12 2v4h4M8 10h5M8 13h5" /></>,
 };
 
