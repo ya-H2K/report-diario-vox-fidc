@@ -22,6 +22,9 @@ export const config = {
   // Balancete e Razão: pasta com uma subpasta por mês ("2026.09"), com os PDFs e Excel do mês.
   balancetesPublicado: process.env.BALANCETES_PUBLICADO ||
     "H:\\3. Gestão\\VOX FIDC\\8.Estudos e levantamentos\\Balancete e Razão - Publicado",
+  // Lâminas: pasta organizada por ano e mês ("2026\\09\\qualquer nome.pdf").
+  laminasPublicado: process.env.LAMINAS_PUBLICADO ||
+    "H:\\3. Gestão\\VOX FIDC\\8.Estudos e levantamentos\\Lâmina - Publicado",
   // Primeiro mês que aparece no filtro do site.
   caixaDesde: process.env.CAIXA_DESDE || "2026-07",
   porta: Number(process.env.PORTA || 3001),

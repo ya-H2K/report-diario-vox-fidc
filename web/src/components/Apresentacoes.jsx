@@ -1,13 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
-import { apiApresentacoes } from "../api.js";
+import { apiApresentacoes, apiLaminas } from "../api.js";
 import { BarraTopo } from "./Cabecalho.jsx";
 import VisorPdf from "./VisorPdf.jsx";
 import { useAutoAtualizacao } from "../hooks/useAutoAtualizacao.js";
 
-// Relatórios > Apresentações de Resultados.
-//   #/relatorios/apresentacoes          lista (cards por ano)
-//   #/relatorios/apresentacoes/AAAA-MM  o PDF do mês na tela, com "Baixar PDF"
-// Os PDFs vêm da pasta de publicados (publicador/publicar.js → bucket "caixa", apresentacoes/AAAA-MM.pdf).
+// Relatórios com um PDF por mês: Apresentação de Resultados e Lâminas (mesma tela, textos diferentes).
+//   #/relatorios/<rota>          lista (cards por ano)
+//   #/relatorios/<rota>/AAAA-MM  o PDF do mês na tela, com "Baixar PDF"
+// Os PDFs vêm das pastas de publicados (publicador/publicar.js → bucket "caixa", <rota>/AAAA-MM.pdf).
+
+export const TIPOS = {
+  apresentacoes: {
+    rota: "apresentacoes", api: apiApresentacoes, titulo: "Apresentação de Resultados",
+    sub: "Apresentações mensais do FIDC Vox", umaPublicada: "publicada", variasPublicadas: "publicadas",
+    vazio: "Nenhuma apresentação publicada ainda.", semMes: "Não há apresentação publicada para",
+    tituloVisor: "Apresentação de Resultados",
+  },
+  laminas: {
+    rota: "laminas", api: apiLaminas, titulo: "Lâmina",
+    sub: "Lâminas mensais do FIDC Vox", umaPublicada: "publicada", variasPublicadas: "publicadas",
+    vazio: "Nenhuma lâmina publicada ainda.", semMes: "Não há lâmina publicada para",
+    tituloVisor: "Lâmina mensal",
+  },
+};
 
 const LONGOS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const CURTOS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -15,17 +30,17 @@ const longo = (id) => `${LONGOS[Number(id.slice(5, 7)) - 1]} ${id.slice(0, 4)}`;
 const curto = (id) => `${CURTOS[Number(id.slice(5, 7)) - 1]}/${id.slice(0, 4)}`;
 const dataBr = (iso) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(iso));
 
-const mesDaUrl = () => window.location.hash.match(/^#\/relatorios\/apresentacoes\/(\d{4}-\d{2})/)?.[1] ?? null;
-
-export default function Apresentacoes({ aba, onAba, onVoltar }) {
+export default function Apresentacoes({ aba, onAba, onVoltar, tipo = "apresentacoes" }) {
+  const t = TIPOS[tipo];
+  const mesDaUrl = () => window.location.hash.match(new RegExp(`^#/relatorios/${t.rota}/(\\d{4}-\\d{2})`))?.[1] ?? null;
   const [itens, setItens] = useState(null);
   const [erro, setErro] = useState(null);
   const [meta, setMeta] = useState(null);
   const [mes, setMes] = useState(mesDaUrl());
   const [ordem, setOrdem] = useState(() => {               // "recentes" | "antigas" (lembrado neste navegador)
-    try { return localStorage.getItem("vox:apr-ordem") === "antigas" ? "antigas" : "recentes"; } catch { return "recentes"; }
+    try { return localStorage.getItem(`vox:${t.rota}-ordem`) === "antigas" ? "antigas" : "recentes"; } catch { return "recentes"; }
   });
-  const trocarOrdem = (o) => { setOrdem(o); try { localStorage.setItem("vox:apr-ordem", o); } catch { /* sem problema */ } };
+  const trocarOrdem = (o) => { setOrdem(o); try { localStorage.setItem(`vox:${t.rota}-ordem`, o); } catch { /* sem problema */ } };
 
   useEffect(() => {
     const aoMudar = () => setMes(mesDaUrl());
@@ -35,7 +50,7 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
 
   const buscar = useCallback(async () => {
     try {
-      const r = await apiApresentacoes.lista();
+      const r = await t.api.lista();
       setItens(r.itens);
       setMeta(r.meta);
       setErro(null);
@@ -43,18 +58,18 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
       setErro(e.message);
       throw e;
     }
-  }, []);
+  }, [t]);
   const intervaloMs = (meta?.intervaloAtualizacaoMin || 10) * 60 * 1000;
-  useAutoAtualizacao(buscar, { chave: "apresentacoes", intervaloMs, temDados: Boolean(itens) });
+  useAutoAtualizacao(buscar, { chave: t.rota, intervaloMs, temDados: Boolean(itens) });
 
   const abrir = (id) => {
-    window.location.hash = id ? `#/relatorios/apresentacoes/${id}` : "#/relatorios/apresentacoes";
+    window.location.hash = id ? `#/relatorios/${t.rota}/${id}` : `#/relatorios/${t.rota}`;
     setMes(id);
     window.scrollTo(0, 0);
   };
 
   const item = mes && itens ? itens.find((i) => i.id === mes) : null;
-  if (mes) return <Visor aba={aba} onAba={onAba} itens={itens} item={item} mes={mes} erro={erro} onTrocar={abrir} onVoltar={() => abrir(null)} />;
+  if (mes) return <Visor t={t} aba={aba} onAba={onAba} itens={itens} item={item} mes={mes} erro={erro} onTrocar={abrir} onVoltar={() => abrir(null)} />;
 
   // agrupado por ano, na ordem escolhida (a lista chega do mais recente para o mais antigo)
   const ordenados = ordem === "antigas" ? [...(itens || [])].reverse() : itens || [];
@@ -72,16 +87,16 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
         <div className="cabeca-pagina">
           <div>
             <button type="button" className="botao-texto relatorio__voltar" onClick={onVoltar}>← Relatórios</button>
-            <h1 className="page-title">Apresentação de Resultados</h1>
+            <h1 className="page-title">{t.titulo}</h1>
             <p className="page-sub">
-              Apresentações mensais do FIDC Vox
-              {itens?.length ? ` — ${itens.length} ${itens.length === 1 ? "publicada" : "publicadas"}` : ""}
+              {t.sub}
+              {itens?.length ? ` — ${itens.length} ${itens.length === 1 ? t.umaPublicada : t.variasPublicadas}` : ""}
             </p>
           </div>
           {itens?.length > 0 && (
             <div className="apr__lado">
               <p className="apr__ultima">Última edição: {curto(itens[0].id)}</p>
-              <span className="contexto__seg apr__ordem" role="group" aria-label="Ordem das apresentações">
+              <span className="contexto__seg apr__ordem" role="group" aria-label="Ordem dos meses">
                 <button type="button" className={ordem === "recentes" ? "on" : undefined} aria-pressed={ordem === "recentes"}
                   onClick={() => trocarOrdem("recentes")}>Mais recentes</button>
                 <button type="button" className={ordem === "antigas" ? "on" : undefined} aria-pressed={ordem === "antigas"}
@@ -96,13 +111,13 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
         ) : !itens ? (
           <p className="vazio" role="status">Carregando…</p>
         ) : !itens.length ? (
-          <p className="vazio">Nenhuma apresentação publicada ainda.</p>
+          <p className="vazio">{t.vazio}</p>
         ) : anos.map(([ano, lista]) => (
-          <section key={ano} className="apr__grupo" aria-label={`Apresentações de ${ano}`}>
+          <section key={ano} className="apr__grupo" aria-label={`${t.titulo}: ${ano}`}>
             <h2 className="apr__ano">{ano} <span>{lista.length}</span></h2>
             <div className="apr__grade">
               {lista.map((i) => (
-                <a key={i.id} href={`#/relatorios/apresentacoes/${i.id}`} className="apr__card"
+                <a key={i.id} href={`#/relatorios/${t.rota}/${i.id}`} className="apr__card"
                   onClick={(e) => { e.preventDefault(); abrir(i.id); }}>
                   <span className="apr__corpo">
                     <span className="apr__doc" aria-hidden="true"><i /><i /><i /></span>
@@ -126,13 +141,13 @@ export default function Apresentacoes({ aba, onAba, onVoltar }) {
 
 // ------------------------------------------------------------------ visualizador
 
-function Visor({ aba, onAba, itens, item, mes, erro, onTrocar, onVoltar }) {
+function Visor({ t, aba, onAba, itens, item, mes, erro, onTrocar, onVoltar }) {
   const [falha, setFalha] = useState(null);
 
   const baixar = async () => {
     if (!item) return;
     try {
-      const url = await apiApresentacoes.link(item, { baixar: true, segundos: 60 });
+      const url = await t.api.link(item, { baixar: true, segundos: 60 });
       const a = document.createElement("a");
       a.href = url;
       a.rel = "noopener";
@@ -148,8 +163,8 @@ function Visor({ aba, onAba, itens, item, mes, erro, onTrocar, onVoltar }) {
       <div className="pagina">
         <div className="cabeca-pagina apr__cabeca">
           <div>
-            <button type="button" className="botao-texto relatorio__voltar" onClick={onVoltar}>← Apresentações</button>
-            <h1 className="page-title">Apresentação de Resultados</h1>
+            <button type="button" className="botao-texto relatorio__voltar" onClick={onVoltar}>← {t.titulo}</button>
+            <h1 className="page-title">{t.tituloVisor}</h1>
             <p className="page-sub">FIDC Vox — {LONGOS[Number(mes.slice(5, 7)) - 1]} de {mes.slice(0, 4)}</p>
           </div>
           <div className="apr__acoes">
@@ -172,10 +187,10 @@ function Visor({ aba, onAba, itens, item, mes, erro, onTrocar, onVoltar }) {
         ) : !itens ? (
           <p className="vazio" role="status">Carregando…</p>
         ) : !item ? (
-          <p className="vazio">Não há apresentação publicada para {longo(mes)}.</p>
+          <p className="vazio">{t.semMes} {longo(mes)}.</p>
         ) : (
-          <VisorPdf key={`${item.id}-${item.publicadoEm}`} titulo="Apresentação de Resultados"
-            carregar={() => apiApresentacoes.arquivo(item)} />
+          <VisorPdf key={`${t.rota}-${item.id}-${item.publicadoEm}`} titulo={t.tituloVisor}
+            carregar={() => t.api.arquivo(item)} />
         )}
       </div>
     </>

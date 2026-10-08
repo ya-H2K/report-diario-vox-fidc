@@ -15,6 +15,7 @@ import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caix
 import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, gerarApresentacoes, gerarBalancetes, cortesDoDia } from "./gerar.js";
 import { listarBalancetes, caminhoNuvem, TIPO_CONTEUDO } from "../server/balancetes.js";
 import { listarApresentacoes } from "../server/apresentacoes.js";
+import { listarLaminas } from "../server/laminas.js";
 import { arquivoPublicado, lerDespesas } from "../server/despesas.js";
 import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
 import { statusDoDia } from "./bauk.js";
@@ -156,6 +157,17 @@ export async function publicar({ tudo = false } = {}) {
     }
   } catch (e) { aviso(`Apresentações: ${e.message}`); }
 
+  // Lâminas: pastas ano\mês, um PDF por mês (mesmo formato das apresentações)
+  let laminas = null;
+  try {
+    const r = await listarLaminas(config.laminasPublicado, String(agora().getFullYear()));
+    laminas = r.itens;
+    Object.assign(mapa, gerarApresentacoes(r.itens, "rel:laminas"));
+    for (const n of r.ignorados) {
+      if (!avisadosApr.has(`l:${n}`)) { avisadosApr.add(`l:${n}`); aviso(`Lâminas: ${n} ignorado (use pastas "AAAA\\MM" com o PDF dentro).`); }
+    }
+  } catch (e) { aviso(`Lâminas: ${e.message}`); }
+
   // Balancete e Razão: subpastas por mês na pasta de publicados
   let balancetes = null;
   try {
@@ -193,6 +205,14 @@ export async function publicar({ tudo = false } = {}) {
     if (!tudo && arquivos[chave] === a.mtimeMs) continue;
     await enviarArquivo(sb, `apresentacoes/${a.id}.pdf`, fs.readFileSync(a.caminho), "application/pdf");
     arquivos[chave] = a.mtimeMs;
+    enviados++;
+  }
+
+  for (const l of laminas || []) {
+    const chave = `lam:${l.id}`;
+    if (!tudo && arquivos[chave] === l.mtimeMs) continue;
+    await enviarArquivo(sb, `laminas/${l.id}.pdf`, fs.readFileSync(l.caminho), "application/pdf");
+    arquivos[chave] = l.mtimeMs;
     enviados++;
   }
 
@@ -241,6 +261,17 @@ async function assinatura() {
     }
   } catch { partes.push("sem-apresentacoes"); }
   try {
+    for (const a of fs.readdirSync(config.laminasPublicado).sort()) {
+      const da = path.join(config.laminasPublicado, a);
+      if (!fs.statSync(da).isDirectory()) continue;
+      for (const m of fs.readdirSync(da).sort()) {
+        const dm = path.join(da, m);
+        if (!fs.statSync(dm).isDirectory()) continue;
+        for (const n of fs.readdirSync(dm).sort()) partes.push(`l:${a}/${m}/${n}:${fs.statSync(path.join(dm, n)).mtimeMs}`);
+      }
+    }
+  } catch { partes.push("sem-laminas"); }
+  try {
     for (const d of fs.readdirSync(config.balancetesPublicado).sort()) {
       const dir = path.join(config.balancetesPublicado, d);
       if (!fs.statSync(dir).isDirectory()) continue;
@@ -263,6 +294,7 @@ async function vigiar() {
   log(`Despesas: ${config.despesasPublicado}`);
   log(`Apresentações: ${config.apresentacoesPublicado}`);
   log(`Balancete e Razão: ${config.balancetesPublicado}`);
+  log(`Lâminas: ${config.laminasPublicado}`);
   try {
     const copiados = await prepararPublicados({ pasta: config.caixaPublicado, modeloTrabalho: config.caixaTrabalho, importar: config.caixaImportar });
     if (copiados.length) log(`Fluxo de caixa, cópia inicial: ${copiados.join(", ")}`);

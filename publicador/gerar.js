@@ -93,8 +93,8 @@ export function gerarDespesas(despesas, arquivo) {
 
 // Apresentações de Resultados (todos os usuários veem): a lista dos PDFs, do mais recente
 // para o mais antigo. O PDF fica no bucket "caixa", em apresentacoes/AAAA-MM.pdf.
-export function gerarApresentacoes(itens) {
-  return { "rel:apresentacoes": { itens: itens.map(({ id, nome, mtimeMs, bytes }) =>
+export function gerarApresentacoes(itens, chave = "rel:apresentacoes") {
+  return { [chave]: { itens: itens.map(({ id, nome, mtimeMs, bytes }) =>
     ({ id, nome, bytes, publicadoEm: new Date(mtimeMs).toISOString() })) } };
 }
 

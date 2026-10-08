@@ -158,30 +158,36 @@ export const apiRelatorios = {
 
 // ---------------------------------------------------------------- apresentações de resultados (todos os usuários)
 
-export const apiApresentacoes = {
-  // Lista dos PDFs publicados: [{ id: "AAAA-MM", nome, bytes, publicadoEm }], do mais recente ao mais antigo.
-  lista: async () => {
-    const r = await lerPainel(["rel:apresentacoes", "inicio"]);
-    return { itens: r["rel:apresentacoes"]?.itens || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
-  },
-  // O PDF do mês (bytes), baixado com o login da pessoa (sem link temporário).
-  arquivo: async (item) => {
-    const { data, error } = await supabase.storage.from("caixa").download(`apresentacoes/${item.id}.pdf`);
-    if (error || !data) {
-      const e = erroDe(error, "Arquivo indisponível no momento.");
-      e.detalhe = error?.message || String(error?.statusCode || "");
-      throw e;
-    }
-    return data;                                   // Blob
-  },
-  // Link temporário para o PDF do mês (para ver na tela ou baixar com o nome original).
-  link: async (item, { baixar = false, segundos = 600 } = {}) => {
-    const { data, error } = await supabase.storage.from("caixa")
-      .createSignedUrl(`apresentacoes/${item.id}.pdf`, segundos, baixar ? { download: item.nome } : undefined);
-    if (error || !data?.signedUrl) throw erroDe(error, "Arquivo indisponível no momento.");
-    return data.signedUrl;
-  },
-};
+// Relatórios com um PDF por mês (Apresentação de Resultados, Lâminas): a lista vem da chave do
+// painel e o PDF do bucket "caixa", em <pasta>/AAAA-MM.pdf.
+function pdfMensal(chave, pasta) {
+  return {
+    // [{ id: "AAAA-MM", nome, bytes, publicadoEm }], do mais recente ao mais antigo.
+    lista: async () => {
+      const r = await lerPainel([chave, "inicio"]);
+      return { itens: r[chave]?.itens || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+    },
+    // O PDF do mês (Blob), baixado com o login da pessoa.
+    arquivo: async (item) => {
+      const { data, error } = await supabase.storage.from("caixa").download(`${pasta}/${item.id}.pdf`);
+      if (error || !data) {
+        const e = erroDe(error, "Arquivo indisponível no momento.");
+        e.detalhe = error?.message || String(error?.statusCode || "");
+        throw e;
+      }
+      return data;
+    },
+    // Link temporário (para baixar com o nome original do arquivo).
+    link: async (item, { baixar = false, segundos = 600 } = {}) => {
+      const { data, error } = await supabase.storage.from("caixa")
+        .createSignedUrl(`${pasta}/${item.id}.pdf`, segundos, baixar ? { download: item.nome } : undefined);
+      if (error || !data?.signedUrl) throw erroDe(error, "Arquivo indisponível no momento.");
+      return data.signedUrl;
+    },
+  };
+}
+export const apiApresentacoes = pdfMensal("rel:apresentacoes", "apresentacoes");
+export const apiLaminas = pdfMensal("rel:laminas", "laminas");
 
 // ---------------------------------------------------------------- balancete e razão (todos os usuários)
 

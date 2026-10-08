@@ -15,6 +15,7 @@ export const RELATORIOS = [
   { id: "despesas", nome: "Despesas", descricao: "Detalhamento das despesas mensais." },
   { id: "apresentacoes", nome: "Apresentação de Resultados", descricao: "Apresentações mensais do fundo." },
   { id: "balancetes", nome: "Balancete", descricao: "Balancete e razão de cada mês." },
+  { id: "laminas", nome: "Lâmina", descricao: "Lâminas mensais do fundo." },
 ];
 
 const subDaUrl = () => window.location.hash.match(/^#\/relatorios\/([\w-]+)/)?.[1] ?? null;
@@ -30,6 +31,7 @@ export default function Relatorios({ aba, onAba }) {
 
   if (sub === "desagio") return <Desagio aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
   if (sub === "balancetes") return <Balancetes aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
+  if (sub === "laminas") return <Apresentacoes key="laminas" tipo="laminas" aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
   if (sub === "apresentacoes") return <Apresentacoes aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
   if (sub === "despesas") return <Despesas aba={aba} onAba={onAba} onVoltar={() => abrir(null)} />;
   return (
