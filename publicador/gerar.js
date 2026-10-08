@@ -76,32 +76,33 @@ export function gerarOperacional(bases, cfg, agoraReal = new Date()) {
   return saida;
 }
 
-// Relatórios (por enquanto só o admin vê). Chaves "admin:..." só são entregues pelo banco
+// Relatórios (liberados para todos desde 08/10/2026: chaves "rel:..."; chaves "admin:..." continuam
+// existindo para o que for só do admin). Chaves "admin:..." só são entregues pelo banco
 // a quem é administrador (função vox_painel do supabase/configurar.sql).
 export function gerarRelatorios(bases) {
   const linhas = [...(bases?.desagio || [])].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
-  return { "admin:desagio": { linhas } };
+  return { "rel:desagio": { linhas } };
 }
 
-// Despesas do fundo (só o admin vê, por enquanto): a planilha publicada já traz todos os meses.
+// Despesas do fundo (todos os usuários veem): a planilha publicada já traz todos os meses.
 export function gerarDespesas(despesas, arquivo) {
   if (!despesas) return {};
-  return { "admin:despesas": { ...despesas,
+  return { "rel:despesas": { ...despesas,
     arquivo: { nome: arquivo.nome, publicadoEm: new Date(arquivo.mtimeMs).toISOString() } } };
 }
 
-// Apresentações de Resultados (só o admin vê, por enquanto): a lista dos PDFs, do mais recente
+// Apresentações de Resultados (todos os usuários veem): a lista dos PDFs, do mais recente
 // para o mais antigo. O PDF fica no bucket "caixa", em apresentacoes/AAAA-MM.pdf.
 export function gerarApresentacoes(itens) {
-  return { "admin:apresentacoes": { itens: itens.map(({ id, nome, mtimeMs, bytes }) =>
+  return { "rel:apresentacoes": { itens: itens.map(({ id, nome, mtimeMs, bytes }) =>
     ({ id, nome, bytes, publicadoEm: new Date(mtimeMs).toISOString() })) } };
 }
 
-// Balancete e Razão (só o admin vê, por enquanto): por mês, quais documentos e formatos existem.
+// Balancete e Razão (todos os usuários veem): por mês, quais documentos e formatos existem.
 // Os arquivos ficam no bucket "caixa", em balancetes/AAAA-MM/{balancete|razao}.{pdf|xlsx|xls|xlsm}.
 export function gerarBalancetes(meses) {
   const limpar = (a) => a && { nome: a.nome, ext: a.ext, bytes: a.bytes, publicadoEm: new Date(a.mtimeMs).toISOString() };
-  return { "admin:balancetes": { meses: meses.map(({ id, docs }) => ({ id, docs: Object.fromEntries(
+  return { "rel:balancetes": { meses: meses.map(({ id, docs }) => ({ id, docs: Object.fromEntries(
     Object.entries(docs).map(([doc, f]) => [doc, { pdf: limpar(f.pdf), excel: limpar(f.excel) }])) })) } };
 }
 

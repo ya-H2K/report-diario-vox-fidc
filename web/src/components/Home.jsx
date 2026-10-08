@@ -6,7 +6,7 @@ import { useSessao } from "../sessao.js";
 
 // Início (#/): aparece logo depois do login e ao clicar na marca no topo.
 // As telas do site ficam em destaque no meio; cada card mostra uma informação real
-// (situação do dia, último mês do caixa, quantos relatórios). Relatórios e Usuários só para o admin.
+// (situação do dia, último mês do caixa, quantos relatórios). A barra de Usuários só aparece para o admin.
 
 const FUSO = "America/Sao_Paulo";
 const CURTOS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -56,11 +56,11 @@ export default function Home({ aba, onAba }) {
       texto: "Saldo, entradas e saídas, enquadramento e movimentação diária do mês.",
       rodape: <span className="home__info">{ultimoMes ? `Último mês: ${mesCurto(ultimoMes)}` : "Mês a mês"}</span>,
     },
-    ...(admin ? [{
-      id: "relatorios", titulo: "Relatórios", admin: true,
+    {
+      id: "relatorios", titulo: "Relatórios",
       texto: "Deságio, despesas, apresentação de resultados e balancete.",
       rodape: <span className="home__info">{RELATORIOS.length} relatórios</span>,
-    }] : []),
+    },
   ];
 
   return (

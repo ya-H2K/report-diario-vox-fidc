@@ -127,22 +127,22 @@ export const apiCaixa = {
   },
 };
 
-// ---------------------------------------------------------------- relatórios (só admin, por enquanto)
+// ---------------------------------------------------------------- relatórios (todos os usuários)
 
 export const apiRelatorios = {
   // Todas as remessas da aba Deságio (o filtro de período é feito na tela).
   desagio: async () => {
-    const r = await lerPainel(["admin:desagio", "inicio"]);
-    if (!r["admin:desagio"]) throw Object.assign(new Error("O relatório de deságio ainda não foi publicado."), { status: 404 });
-    return { linhas: r["admin:desagio"].linhas || [], hoje: agoraBrasilia().iso,
+    const r = await lerPainel(["rel:desagio", "inicio"]);
+    if (!r["rel:desagio"]) throw Object.assign(new Error("O relatório de deságio ainda não foi publicado."), { status: 404 });
+    return { linhas: r["rel:desagio"].linhas || [], hoje: agoraBrasilia().iso,
       meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
   },
 
   // Despesas do fundo: a planilha publicada (todos os meses) e o link para baixá-la.
   despesas: async () => {
-    const r = await lerPainel(["admin:despesas", "inicio"]);
-    if (!r["admin:despesas"]) throw Object.assign(new Error("O relatório de despesas ainda não foi publicado."), { status: 404 });
-    return { despesas: r["admin:despesas"], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+    const r = await lerPainel(["rel:despesas", "inicio"]);
+    if (!r["rel:despesas"]) throw Object.assign(new Error("O relatório de despesas ainda não foi publicado."), { status: 404 });
+    return { despesas: r["rel:despesas"], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
   },
   baixarDespesas: async (arquivo) => {
     const { data, error } = await supabase.storage.from("caixa").createSignedUrl("despesas/atual.xlsx", 60, { download: arquivo.nome });
@@ -156,13 +156,13 @@ export const apiRelatorios = {
   },
 };
 
-// ---------------------------------------------------------------- apresentações de resultados (só admin, por enquanto)
+// ---------------------------------------------------------------- apresentações de resultados (todos os usuários)
 
 export const apiApresentacoes = {
   // Lista dos PDFs publicados: [{ id: "AAAA-MM", nome, bytes, publicadoEm }], do mais recente ao mais antigo.
   lista: async () => {
-    const r = await lerPainel(["admin:apresentacoes", "inicio"]);
-    return { itens: r["admin:apresentacoes"]?.itens || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+    const r = await lerPainel(["rel:apresentacoes", "inicio"]);
+    return { itens: r["rel:apresentacoes"]?.itens || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
   },
   // O PDF do mês (bytes), baixado com o login da pessoa (sem link temporário).
   arquivo: async (item) => {
@@ -183,14 +183,14 @@ export const apiApresentacoes = {
   },
 };
 
-// ---------------------------------------------------------------- balancete e razão (só admin, por enquanto)
+// ---------------------------------------------------------------- balancete e razão (todos os usuários)
 
 const caminhoBalancete = (mes, doc, arq) => `balancetes/${mes}/${doc}.${arq.ext}`;
 export const apiBalancetes = {
   // [{ id: "AAAA-MM", docs: { balancete: { pdf?, excel? }, razao: { pdf?, excel? } } }], do mais recente ao mais antigo.
   lista: async () => {
-    const r = await lerPainel(["admin:balancetes", "inicio"]);
-    return { meses: r["admin:balancetes"]?.meses || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
+    const r = await lerPainel(["rel:balancetes", "inicio"]);
+    return { meses: r["rel:balancetes"]?.meses || [], meta: { intervaloAtualizacaoMin: r.inicio?.intervaloAtualizacaoMin || 10 } };
   },
   // O arquivo (Blob), baixado com o login da pessoa.
   arquivo: async (mes, doc, arq) => {

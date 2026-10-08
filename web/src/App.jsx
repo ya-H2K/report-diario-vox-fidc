@@ -8,9 +8,9 @@ import Home from "./components/Home.jsx";
 import { apiAuth } from "./api.js";
 import { SessaoContexto } from "./sessao.js";
 
-// Início (#/), Fluxo operacional (#/report), Fluxo de caixa (#/caixa) e, só para o admin,
-// Relatórios (#/relatorios, #/relatorios/desagio...) e Usuários (#/usuarios).
-const SO_ADMIN = ["usuarios", "relatorios"];
+// Início (#/), Fluxo operacional (#/report), Fluxo de caixa (#/caixa), Relatórios
+// (#/relatorios, #/relatorios/desagio...) e, só para o admin, Usuários (#/usuarios).
+const SO_ADMIN = ["usuarios"];
 const HREF = { home: "#/", operacional: "#/report", caixa: "#/caixa", usuarios: "#/usuarios", relatorios: "#/relatorios" };
 const abaDaUrl = () => {
   const h = window.location.hash;

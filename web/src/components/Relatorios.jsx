@@ -39,7 +39,7 @@ export default function Relatorios({ aba, onAba }) {
         <div className="cabeca-pagina">
           <div>
             <h1 className="page-title">Relatórios</h1>
-            <p className="page-sub">Visível só para o administrador enquanto está em teste.</p>
+            <p className="page-sub">Relatórios do FIDC Vox.</p>
           </div>
         </div>
         <div className="grade grade--3">
