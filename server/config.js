@@ -25,6 +25,9 @@ export const config = {
   // Lâminas: pasta organizada por ano e mês ("2026\\09\\qualquer nome.pdf").
   laminasPublicado: process.env.LAMINAS_PUBLICADO ||
     "H:\\3. Gestão\\VOX FIDC\\8.Estudos e levantamentos\\Lâmina - Publicado",
+  // Horário de chegada dos arquivos RPE: a automação baixar_rpe_fiabilite.py grava um JSON por dia
+  // (AAAA-MM-DD.json) nesta pasta, com a hora em que cada arquivo chegou ao SFTP da Fiabilite.
+  rpeChegadas: process.env.RPE_CHEGADAS || "C:\\Automacao\\Vox\\rpe_chegadas",
   // Primeiro mês que aparece no filtro do site.
   caixaDesde: process.env.CAIXA_DESDE || "2026-07",
   porta: Number(process.env.PORTA || 3001),

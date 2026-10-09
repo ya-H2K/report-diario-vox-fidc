@@ -92,6 +92,12 @@ export const api = {
     }
     return { meta, dia };
   },
+
+  // Só o admin recebe (chaves "admin:..."): hora de chegada de cada arquivo RPE no SFTP.
+  horarios: async (iso) => {
+    const r = await lerPainel([`admin:horarios:${iso}`]);
+    return r[`admin:horarios:${iso}`] || { rpe: [] };
+  },
 };
 
 // ---------------------------------------------------------------- fluxo de caixa

@@ -367,6 +367,42 @@ a.marca:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
 .det__barra { height: 4px; background: var(--line); position: relative; }
 .det__barra i { position: absolute; inset: 0 auto 0 0; background: var(--ok); }
 
+/* hora em que a etapa ficou OK: discreta, no fim do card aberto */
+.det__hora { font-size: .72rem; color: var(--text-dim); letter-spacing: .03em; }
+.det__hora b { font-weight: 400; color: var(--text); }
+
+/* abas Resumo | Horários do report (só o admin vê) */
+.abas-report { display: flex; gap: 1.6rem; border-bottom: 1px solid var(--line); margin: -1rem 0 1.4rem; }
+.abas-report button {
+  padding: .4rem 0; margin-bottom: -1px; background: none; border: 0; border-bottom: 1px solid transparent;
+  color: var(--text-dim); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+}
+.abas-report button:hover { color: var(--text); }
+.abas-report button.on { color: var(--gold-bright); border-bottom-color: var(--gold); }
+
+/* aba Horários: linha do tempo do dia */
+.tl { background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--gold); padding: 1.5rem 1.8rem; }
+.tl ol { list-style: none; margin: 0; padding: 0; position: relative; }
+.tl ol::before { content: ""; position: absolute; left: calc(5.25rem - .5px); top: .6rem; bottom: .6rem; width: 1px; background: var(--linha-forte); }
+.tl li { display: grid; grid-template-columns: 4rem 1.1rem minmax(0, 1fr) auto; align-items: baseline; gap: .4rem .7rem; padding: .55rem 0; }
+.tl time { color: var(--gold-bright); font-size: .95rem; text-align: right; }
+.tl__ponto { width: .55rem; height: .55rem; border-radius: 50%; background: var(--ok); justify-self: center; position: relative; top: -.05rem; box-shadow: 0 0 0 3px var(--surface); }
+.tl__desc { color: var(--text-dim); font-size: .8rem; text-align: right; }
+.tl__sub { padding: .3rem 0 !important; color: var(--text-dim); font-size: .82rem; }
+.tl__sub time { color: var(--text-dim); font-size: .8rem; }
+.tl__sub .tl__ponto { width: .35rem; height: .35rem; background: var(--text-dim); }
+.tl__sub .tl__nome { padding-left: 1rem; }
+.tl__pendente time, .tl__pendente .tl__nome { color: var(--text-dim); }
+.tl__pendente .tl__ponto { background: var(--surface); border: 1px solid var(--linha-forte); }
+.tl__nota { margin: 1rem 0 0; font-size: .75rem; color: var(--text-dim); line-height: 1.5; }
+.tl__vazio { margin: 0; color: var(--text-dim); }
+@media (max-width: 640px) {
+  .tl { padding: 1.1rem; }
+  .tl li { grid-template-columns: 3.2rem 1rem minmax(0, 1fr); }
+  .tl ol::before { left: calc(4.4rem - .5px); }
+  .tl__desc { grid-column: 3; text-align: left; }
+}
+
 .quadro-obs__vazio td { color: var(--text-dim) !important; padding-top: .2rem !important; }
 
 /* -------------------------------------------------------- selo de status */

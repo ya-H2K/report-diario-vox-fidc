@@ -29,7 +29,7 @@ function momento(iso, hhmm) {
   return new Date(a, m - 1, d, h, mi, 0, 0);
 }
 
-function opcoesDe(cfg, agora) {
+export function opcoesDe(cfg, agora) {
   return { agora, horaFechamento: cfg.horaFechamento, horaEncerramento: cfg.horaEncerramento,
     limiteRpe: cfg.limiteRpe, limiteArquivosBauk: cfg.limiteArquivosBauk, limiteEndosso: cfg.limiteEndosso, limiteUrfa: cfg.limiteUrfa,
     limiteFlash: cfg.limiteFlash, mostrarResponsavel: cfg.mostrarResponsavel };
@@ -67,6 +67,11 @@ export function gerarOperacional(bases, cfg, agoraReal = new Date()) {
   for (const iso of new Set([...datas, hoje])) saida[`dia:${iso}`] = { variantes: variantesDoDia(bases, iso, cfg, agoraReal) };
   const vazio = variantesDoDia(bases, DIA_VAZIO, cfg, momento(DIA_VAZIO, "00:00"));
   saida["dia:vazio"] = { variantes: vazio.map((v) => ({ ...v, dia: { ...v.dia, data: null } })) };
+  // Só para o admin (aba "Horários"): hora de chegada de cada arquivo RPE no SFTP.
+  for (const [iso, porTipo] of Object.entries(bases.chegadasRpe || {})) {
+    const rpe = Object.entries(porTipo).map(([tipo, hora]) => ({ tipo, hora })).sort((a, b) => (a.hora < b.hora ? -1 : 1));
+    if (rpe.length) saida[`admin:horarios:${iso}`] = { rpe };
+  }
   saida.inicio = {
     datas,
     cortes: cortesDoDia(cfg),
@@ -76,11 +81,25 @@ export function gerarOperacional(bases, cfg, agoraReal = new Date()) {
   return saida;
 }
 
+// Deságio: a mesma aquisição às vezes entra duas vezes na aba (remessas diferentes com o mesmo
+// valor nominal e o mesmo valor pago, ao centavo; ex.: 10260 em 01/09 e 10295 em 02/09).
+// Fica só a de remessa maior, que é a que efetivamente ocorreu.
+export function semRepetidas(linhas) {
+  const chave = (l) => `${Math.round(l.nominal * 100)}|${Math.round(l.pago * 100)}`;
+  const melhor = new Map();
+  for (const l of linhas) {
+    const k = chave(l);
+    const atual = melhor.get(k);
+    if (!atual || Number(l.remessa) > Number(atual.remessa)) melhor.set(k, l);
+  }
+  return linhas.filter((l) => melhor.get(chave(l)) === l);
+}
+
 // Relatórios (liberados para todos desde 08/10/2026: chaves "rel:..."; chaves "admin:..." continuam
 // existindo para o que for só do admin). Chaves "admin:..." só são entregues pelo banco
 // a quem é administrador (função vox_painel do supabase/configurar.sql).
 export function gerarRelatorios(bases) {
-  const linhas = [...(bases?.desagio || [])].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+  const linhas = semRepetidas(bases?.desagio || []).sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
   return { "rel:desagio": { linhas } };
 }
 

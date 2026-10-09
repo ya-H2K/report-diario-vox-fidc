@@ -11,3 +11,7 @@ publicador/.estado.json
 publicador/.bauk-exemplo.json
 publicador/.bauk-status.json
 publicador/.bauk-datas.json
+publicador/.horarios-etapas.json
+
+# imagens de apoio geradas nas conversas (não vão para o site)
+Claude outputs/

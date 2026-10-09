@@ -64,6 +64,8 @@ function informacaoDoDia(b, iso, arquivosFechados = true) {
 // ---------- Extração RPE  ('Extração RPE'!I) ----------
 function extracaoRpe(b, iso) {
   const itens = doDia(b.extracaoRpe, iso);
+  // { "Extrato Diario": "08:47", ... }: hora em que cada arquivo chegou ao SFTP (automação da RPE)
+  const chegadas = b.chegadasRpe?.[iso] || null;
   const recebidos = itens.filter((i) => i.recebido === "Sim").length;
   const faltando = itens.length - recebidos;
   const detalhe = itens.length ? `${recebidos} de ${itens.length} arquivos recebidos` : "Nenhum arquivo registrado";
@@ -71,7 +73,7 @@ function extracaoRpe(b, iso) {
   if (!itens.length || recebidos === 0) s = "nao_realizado";
   else if (faltando === 0) s = "ok";
   else s = "parcial";
-  return { ...st(s, detalhe), itens };
+  return { ...st(s, detalhe), itens, chegadas };
 }
 
 // ---------- Processamento Bauk  ('Visão Geral Bauk'!K:M) ----------
@@ -307,9 +309,15 @@ function detalheDe(id, r) {
   switch (id) {
     case "rpe": {
       const recebidos = new Set(itens.filter((i) => i.recebido === "Sim").map((i) => i.tipo));
+      // Hora de chegada no SFTP (automação da RPE): a do 1º arquivo e, com os 6 recebidos, a do último
+      // (= quando a extração ficou completa). A hora de cada arquivo vai só para o admin (admin:horarios).
+      const horas = TIPOS_RPE.map((t) => (recebidos.has(t) && r.chegadas?.[t]) || null);
+      const completo = TIPOS_RPE.every((t) => recebidos.has(t)) && horas.every(Boolean);
       return { recebidos: TIPOS_RPE.filter((t) => recebidos.has(t)).length, total: TIPOS_RPE.length,
         arquivos: TIPOS_RPE.map((t) => ({ tipo: t, recebido: recebidos.has(t) })),
-        faltando: TIPOS_RPE.filter((t) => !recebidos.has(t)) };
+        faltando: TIPOS_RPE.filter((t) => !recebidos.has(t)),
+        primeiroAs: horas.filter(Boolean).sort()[0] || null,
+        concluidoAs: completo ? [...horas].sort().at(-1) : null };
     }
     case "bauk":
       return { arquivos: itens.length, tipos: new Set(itens.map((i) => i.tipo).filter(Boolean)).size,
@@ -386,7 +394,15 @@ export function montarDia(b, iso, { agora, horaFechamento, horaEncerramento = "1
     endosso: aberto && diaAberto(iso, agora, limiteEndosso),
   });
   const temDados = Object.values(etapas).some((e) => (e.itens?.length ?? 0) > 0);
-  const processos = ETAPAS.map((e) => ({ ...resumo(e.id, e.nome, etapas[e.id]), detalhe: detalheDe(e.id, etapas[e.id]) }));
+  // Horário em que cada etapa ficou OK (aparece dentro do card aberto). Extração RPE: hora em que
+  // o último arquivo chegou ao SFTP; demais: hora em que o publicador viu a etapa ficar OK na planilha.
+  const horasDia = b.horariosEtapas?.[iso] || {};
+  const processos = ETAPAS.map((e) => {
+    const detalhe = detalheDe(e.id, etapas[e.id]) || {};
+    const hora = etapas[e.id].status !== "ok" ? null
+      : e.id === "rpe" ? detalhe.concluidoAs || horasDia.rpe || null : horasDia[e.id] || null;
+    return { ...resumo(e.id, e.nome, etapas[e.id]), detalhe: { ...detalhe, concluidoAs: hora } };
+  });
   const info = informacaoDoDia(b, iso);
   return {
     data: iso,

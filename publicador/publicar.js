@@ -12,14 +12,14 @@ import { fileURLToPath } from "node:url";
 import { config, agora } from "../server/config.js";
 import { obterBases } from "../server/planilha.js";
 import { listarPublicados, obterCaixa, prepararPublicados } from "../server/caixa.js";
-import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, gerarApresentacoes, gerarBalancetes, cortesDoDia } from "./gerar.js";
+import { gerarOperacional, gerarCaixa, gerarRelatorios, gerarDespesas, gerarApresentacoes, gerarBalancetes, cortesDoDia, opcoesDe } from "./gerar.js";
 import { listarBalancetes, caminhoNuvem, TIPO_CONTEUDO } from "../server/balancetes.js";
 import { listarApresentacoes } from "../server/apresentacoes.js";
 import { listarLaminas } from "../server/laminas.js";
 import { arquivoPublicado, lerDespesas } from "../server/despesas.js";
 import { conectar, gravarChaves, apagarChaves, enviarArquivo } from "./nuvem.js";
 import { statusDoDia } from "./bauk.js";
-import { faseBauk, isoLocal, prepararBases } from "../server/status.js";
+import { faseBauk, isoLocal, prepararBases, montarDia } from "../server/status.js";
 
 const PASTA = path.dirname(fileURLToPath(import.meta.url));
 const ARQ_ESTADO = path.join(PASTA, ".estado.json");
@@ -117,6 +117,66 @@ function conferirBauk(brutas) {
   }
 }
 
+// ---------- horário de chegada dos arquivos RPE ----------
+// A automação baixar_rpe_fiabilite.py (C:\\Automacao\\Vox) grava rpe_chegadas\\AAAA-MM-DD.json com a hora
+// em que cada um dos 6 arquivos chegou ao SFTP. Vira { "AAAA-MM-DD": { "Extrato Diario": "08:47", ... } }.
+function lerChegadasRpe() {
+  const saida = {};
+  let nomes = [];
+  try { nomes = fs.readdirSync(config.rpeChegadas).filter((n) => /^\d{4}-\d{2}-\d{2}\.json$/.test(n)); }
+  catch { return saida; }                    // pasta ainda não existe: a automação nunca rodou
+  for (const n of nomes) {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(config.rpeChegadas, n), "utf-8"));
+      const dia = {};
+      for (const [tipo, a] of Object.entries(j.arquivos || {})) {
+        const hhmm = String(a?.chegada || "").slice(11, 16);
+        if (/^\d{2}:\d{2}$/.test(hhmm)) dia[tipo] = hhmm;
+      }
+      saida[n.slice(0, 10)] = dia;
+    } catch { /* arquivo sendo gravado: pega na próxima volta */ }
+  }
+  return saida;
+}
+
+// ---------- horário em que cada etapa ficou OK ----------
+// A cada minuto o publicador olha o status das etapas de hoje. Quando vê uma etapa passar de
+// "não OK" para OK, guarda a hora (publicador/.horarios-etapas.json). Só vale se a observação
+// anterior for recente (até 20 min): com o PC desligado ou o publicador fechado, a hora seria
+// a de quando ele voltou, então fica sem hora em vez de mostrar uma hora errada.
+const ARQ_HORARIOS = path.join(PASTA, ".horarios-etapas.json");
+let horarios = {};
+try { horarios = JSON.parse(fs.readFileSync(ARQ_HORARIOS, "utf-8")); } catch { /* ainda não existe */ }
+const horasEtapas = () => Object.fromEntries(Object.entries(horarios).map(([iso, h]) => [iso, h.horas || {}]));
+
+function observarEtapas(brutas) {
+  if (!brutas) return;
+  const agoraLocal = agora();
+  const iso = isoLocal(agoraLocal);
+  let dia;
+  try {
+    dia = montarDia({ ...brutas, statusBauk: statusBaukParaBases(), dataBauk }, iso, opcoesDe(config, agoraLocal));
+  } catch { return; }
+  const reg = horarios[iso] || (horarios[iso] = { visto: {}, vistoEm: 0, horas: {} });
+  const recente = agoraLocal.getTime() - reg.vistoEm <= 20 * 60 * 1000;
+  const hhmm = agoraLocal.toTimeString().slice(0, 5);
+  let mudou = false;
+  for (const p of dia.processos) {
+    const antes = reg.visto[p.id];
+    if (p.status === "ok" && antes && antes !== "ok" && recente && !reg.horas[p.id]) {
+      reg.horas[p.id] = hhmm;
+      mudou = true;
+      log(`${p.nome}: OK às ${hhmm}.`);
+    }
+    reg.visto[p.id] = p.status;
+  }
+  reg.vistoEm = agoraLocal.getTime();
+  // guarda só os últimos 120 dias
+  for (const k of Object.keys(horarios).sort().slice(0, -120)) delete horarios[k];
+  try { fs.writeFileSync(ARQ_HORARIOS, JSON.stringify(horarios, null, 1), "utf-8"); } catch { /* fica na memória */ }
+  return mudou;
+}
+
 const avisadosApr = new Set();
 const statusBaukParaBases = () => (bauk.iso && bauk.status ? { [bauk.iso]: bauk.status } : {});
 
@@ -126,7 +186,9 @@ export async function publicar({ tudo = false } = {}) {
   const leitura = await obterBases(config.planilha, { forcar: true });
   if (leitura.erro) aviso(leitura.erro);
   conferirBauk(leitura.bases);
-  const mapa = gerarOperacional({ ...leitura.bases, statusBauk: statusBaukParaBases(), dataBauk }, config, agora());
+  observarEtapas(leitura.bases);
+  const mapa = gerarOperacional({ ...leitura.bases, statusBauk: statusBaukParaBases(), dataBauk,
+    chegadasRpe: lerChegadasRpe(), horariosEtapas: horasEtapas() }, config, agora());
 
   let publicados = [];
   try { publicados = await listarPublicados(config.caixaPublicado, config.caixaDesde); }
@@ -278,7 +340,10 @@ async function assinatura() {
       for (const n of fs.readdirSync(dir).sort()) partes.push(`b:${d}/${n}:${fs.statSync(path.join(dir, n)).mtimeMs}`);
     }
   } catch { partes.push("sem-balancetes"); }
-  partes.push(hash(statusBaukParaBases()), hash(dataBauk));
+  try {
+    for (const n of fs.readdirSync(config.rpeChegadas).sort()) partes.push(`r:${n}:${fs.statSync(path.join(config.rpeChegadas, n)).mtimeMs}`);
+  } catch { partes.push("sem-rpe-chegadas"); }
+  partes.push(hash(statusBaukParaBases()), hash(dataBauk), hash(horasEtapas()));
   return partes.join("|");
 }
 
@@ -295,6 +360,7 @@ async function vigiar() {
   log(`Apresentações: ${config.apresentacoesPublicado}`);
   log(`Balancete e Razão: ${config.balancetesPublicado}`);
   log(`Lâminas: ${config.laminasPublicado}`);
+  log(`Chegada dos arquivos RPE: ${config.rpeChegadas}`);
   try {
     const copiados = await prepararPublicados({ pasta: config.caixaPublicado, modeloTrabalho: config.caixaTrabalho, importar: config.caixaImportar });
     if (copiados.length) log(`Fluxo de caixa, cópia inicial: ${copiados.join(", ")}`);
@@ -304,6 +370,7 @@ async function vigiar() {
   let falhas = 0;
   for (;;) {
     await atualizarBauk();
+    try { observarEtapas((await obterBases(config.planilha)).bases); } catch { /* planilha indisponível agora */ }
     const atual = await assinatura();
     if (atual !== ultima) {
       try {

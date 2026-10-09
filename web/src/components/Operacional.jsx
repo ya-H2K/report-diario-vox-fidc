@@ -2,9 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { BarraTopo, CabecaPagina } from "./Cabecalho.jsx";
 import Report from "./Report.jsx";
+import Horarios from "./Horarios.jsx";
+import { useSessao } from "../sessao.js";
 
 // Aba "Fluxo operacional": a mesma tela de antes, agora como uma das abas do site.
 export default function Operacional({ aba, onAba }) {
+  const { usuario } = useSessao();
+  const admin = Boolean(usuario?.admin);
+  const [vista, setVista] = useState("resumo");           // resumo | horarios (aba Horários: só o admin)
   const [datas, setDatas] = useState([]);
   const [meta, setMeta] = useState(null);
   const [hoje, setHoje] = useState(null);                // dia sugerido pelo servidor (hoje, ou o último útil)
@@ -166,7 +171,19 @@ export default function Operacional({ aba, onAba }) {
         ) : !diaAtual.temDados && !diaAtual.aberto ? (
           <p className="vazio">Sem movimento registrado neste dia.</p>
         ) : (
-          <Report dia={diaAtual} mostrarResponsavel={meta?.mostrarResponsavel !== false} />
+          <>
+            {admin && (
+              <nav className="abas-report" aria-label="Visão do report">
+                {[["resumo", "Resumo"], ["horarios", "Horários"]].map(([id, nome]) => (
+                  <button key={id} type="button" className={vista === id ? "on" : undefined}
+                    aria-pressed={vista === id} onClick={() => setVista(id)}>{nome}</button>
+                ))}
+              </nav>
+            )}
+            {admin && vista === "horarios"
+              ? <Horarios dia={diaAtual} />
+              : <Report dia={diaAtual} mostrarResponsavel={meta?.mostrarResponsavel !== false} />}
+          </>
         )}
       </div>
     </>

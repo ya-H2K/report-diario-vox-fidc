@@ -76,6 +76,14 @@ function Detalhe({ id, d }) {
   return null;
 }
 
+// Hora em que a etapa ficou OK, discreta, no fim do detalhe (só aparece com o card aberto).
+const PALAVRA_HORA = { rpe: "completo às", bauk: "arquivos às", urfa: "liquidada às", endosso: "liquidado às", baixas: "concluídas às" };
+function HoraEtapa({ id, d }) {
+  if (d?.concluidoAs) return <span className="det__hora">{PALAVRA_HORA[id] || "concluído às"} <b>{d.concluidoAs}</b></span>;
+  if (id === "rpe" && d?.primeiroAs) return <span className="det__hora">1º arquivo às <b>{d.primeiroAs}</b></span>;
+  return null;
+}
+
 // Card de processo (1ª linha): clicável, abre o detalhe dentro do próprio card.
 function CardProcesso({ item, aberto, onClicar }) {
   return (
@@ -83,7 +91,7 @@ function CardProcesso({ item, aberto, onClicar }) {
       aria-expanded={aberto} onClick={onClicar}>
       <span className="card__rotulo">{item.nome}</span>
       <Carimbo status={item.status}>{item.rotulo}</Carimbo>
-      {aberto && <div className="det"><Detalhe id={item.id} d={item.detalhe} /></div>}
+      {aberto && <div className="det"><Detalhe id={item.id} d={item.detalhe} /><HoraEtapa id={item.id} d={item.detalhe} /></div>}
     </button>
   );
 }
